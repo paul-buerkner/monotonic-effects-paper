@@ -34,3 +34,9 @@ vignettes/*.pdf
 
 # Shiny token, see https://shiny.rstudio.com/articles/shinyapps.html
 rsconnect/
+
+# other files
+.Rproj.user
+Archiv/
+monotonic_effects_files/
+monotonic_effects.tex
