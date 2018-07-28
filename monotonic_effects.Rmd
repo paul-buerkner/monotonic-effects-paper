@@ -63,11 +63,14 @@ header-includes:
    - \usepackage{tcolorbox}
    - \usepackage{paralist}
    - \usepackage{multicol}
+   - \usepackage{framed}
    - \newcommand\numberthis{\addtocounter{equation}{1}\tag{\theequation}}
    - \DeclareMathOperator\mo{mo}
 editor_options: 
   chunk_output_type: console
 ---
+
+`\newcommand\ECNote[1]{\definecolor{shadecolor}{RGB}{192,192,255}\noindent\begin{center}\begin{minipage}{0.9\textwidth}\begin{shaded}\noindent\textbf{EC Note : }#1\par\end{shaded}\end{minipage}\end{center}\par}`{=latex}
 
 ```{r setup, message = FALSE, warning = FALSE, results = "hide", cache = FALSE}
 library(knitr)
@@ -198,27 +201,42 @@ monotonic effects are presented in the Appendix.
 
 # Monotonic Effects
 
-A predictor which we want to model as monotonic must be integer
-valued. The integers may represent, for instance, count data, discrete
-points in time, or categories of an ordinal variable. Since the latter
-is possibly the most relevant use case in psychology and related
-disciplines, we speak of predictor categories in the following to
-refer to the values of a monotonic predictor. As opposed to a
-continuous predictor, predictor categories are not assumed to be
-equidistant with respect to their effect on the response
-variable. Instead, the distance between adjacent predictor categories
-is estimated from the data and may vary across categories. This is
-realized by parameterizing as follows: One parameter, $b$, takes care
-of the direction and size of the effect similar to an ordinary
-regression parameter, while an additional parameter vector,
-$\bm{\zeta}$, estimates the normalized distances between consecutive
-predictor categories. For a single monotonic predictor, $\bm{x}$, the
-corresponding predictor term $\eta_n$ of observation $n$ looks as
-follows:
+A predictor which we want to model as monotonic must ~~be integer
+valued~~ \textcolor{blue}{have discrete values in an ordered set and
+be represented (coded) by integers}. The integers may represent, for
+instance, count data, discrete points in time, or categories of an
+ordinal variable. Since the latter is possibly the most relevant use
+case in psychology and related disciplines, we speak of predictor
+categories in the following to refer to the values of a monotonic
+predictor. As opposed to a continuous predictor, predictor categories
+are not assumed to be equidistant with respect to their effect on the
+response variable. Instead, the distance between adjacent predictor
+categories is estimated from the data and may vary across
+categories. This is realized by parameterizing as follows: One
+parameter, $b$, takes care of the direction and size of the effect
+similar to an ordinary regression parameter, while an additional
+parameter vector, $\bm{\zeta}$, estimates the normalized distances
+between consecutive predictor categories. For a single monotonic
+predictor, $\bm{x}$, the corresponding predictor term $\eta_n$ of
+observation $n$ looks as follows:
 
 \begin{equation}
 \eta_n = b \, \sum_{i = 1}^{x_n} \zeta_i
 \end{equation}
+
+\ECNote{I'm not convinced by the ``notational convenience'' introduced below : 
+\begin{itemize}
+\item indices starting at zero are common in math circles, much less
+in stats ; and R indexes start at 1 ;
+\item one should explicitly or implicitly note that a $n$-levels
+variable has $n-1$ distance between levels : therefore, the
+"convenience is to note $\zeta_1=0$, which amounts to define $\zeta_i$
+as the distance between $x_i$ and $x_{i-1}$.
+\end{itemize}
+Proposed redaction : \emph{For notational convenience, we define
+$\zeta_i$ as the distance between $x_i$ and $x_{i-1}$ ; it follows
+that $\zeta_1=0$ (and that $\zeta_0$ is not defined).}
+}
 
 For notational convenience, we define $\sum_{i = 1}^{0} \zeta_i =
 0$. The parameter $b$ can take on any real value, while $\bm{\zeta}$
