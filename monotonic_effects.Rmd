@@ -24,13 +24,13 @@ abstract: |
   The reparameterization is done in terms of a scale parameter $b$ taking 
   care of the direction and size of the effect and a simplex parameter 
   $\bm{\zeta}$ modeling the normalized differences between categories. 
-  This ensures that predictions are monotonotically increasing or decreasing,
+  This ensures that predictions are monotonically increasing or decreasing,
   while changes between adjacent categories may vary across categories.
   This formulation nicely generalizes to both interaction terms as well
   as multilevel structures. Monotonic effects may not only be applied to
   ordinal predictors, but also to other discrete variables for which a
   monotonic relationship is plausible. This includes variables representing
-  count data or discrete points in time. Fitting motonotonic effects in a
+  count data or discrete points in time. Fitting monotonic effects in a
   fully Bayesian framework is straightforward with the R package brms,
   which also allows to incorporate prior information and to check the
   assumption of monotonicity. 
@@ -780,7 +780,7 @@ effect that deviates from zero in a relevant manner after applying
 regularization of the horseshoe prior. Most notably, these are
 impairments in 'walking' (`d450`) and 'moving around (`d455`), but
 also in 'community life' (`d910`) and 'sensation of pain' (`b280`),
-which all seem to have a negative effect on subjective physical heatlh
+which all seem to have a negative effect on subjective physical health
 after controlling for all other predictors. This does not necessarily
 imply that other predictors have no additional predictive value. To
 better better understand the latter, different variable selection
