@@ -70,7 +70,12 @@ editor_options:
   chunk_output_type: console
 ---
 
-`\newcommand\ECNote[1]{\definecolor{shadecolor}{RGB}{192,192,255}\noindent\begin{center}\begin{minipage}{0.9\textwidth}\begin{shaded}\noindent\textbf{EC Note : }#1\par\end{shaded}\end{minipage}\end{center}\par}`{=latex}
+<!-- Sorry : this the only way I found to have Pandoc accept the definition -->
+<!-- of a macro. Note that this has the side effect of coloring the -->
+<!-- background of the code excerpts ; I haven't been able to debug this... -->
+
+`\newcommand\ECNote[1]{\let\oldshadecolor=\shadecolor\definecolor{shadecolor}{RGB}{255,255,192}\noindent\begin{center}\begin{minipage}{0.9\textwidth}\begin{shaded}\noindent\textbf{EC Note : }#1\par\end{shaded}\end{minipage}\end{center}\par\let\shadecolor=\oldshadecolor}`{=latex}
+
 
 ```{r setup, message = FALSE, warning = FALSE, results = "hide", cache = FALSE}
 library(knitr)
@@ -227,36 +232,42 @@ observation $n$ looks as follows:
 \ECNote{I'm not convinced by the ``notational convenience'' introduced below : 
 \begin{itemize}
 \item indices starting at zero are common in math circles, much less
-in stats ; and R indexes start at 1 ;
+in stats ; and \textsf{R} indexes start at 1 ;
 \item one should explicitly or implicitly note that a $n$-levels
 variable has $n-1$ distance between levels : therefore, the
-"convenience is to note $\zeta_1=0$, which amounts to define $\zeta_i$
+``convenience'' is to note $\zeta_1=0$, which amounts to define $\zeta_i$
 as the distance between $x_i$ and $x_{i-1}$.
 \end{itemize}
 Proposed redaction : \emph{For notational convenience, we define
-$\zeta_i$ as the distance between $x_i$ and $x_{i-1}$ ; it follows
+$\zeta_i$ as the (normalized) distance between $x_i$ and $x_{i-1}$ ; it follows
 that $\zeta_1=0$ (and that $\zeta_0$ is not defined).}
+
+However, this redaction is \textbf{inconsistent} with the (current
+state of the) figure~1, where $x$ indices start at 0
+and $\zeta_1$ is the normalized difference between $x_1$ and $x_0$,
+which is \textbf{not} 0. \emph{This inconsistency must be resolved.}
+
 }
 
-For notational convenience, we define $\sum_{i = 1}^{0} \zeta_i =
-0$. The parameter $b$ can take on any real value, while $\bm{\zeta}$
+~~For notational convenience, we define $\sum_{i = 1}^{0} \zeta_i =
+0$.~~ The parameter $b$ can take on any real value, while $\bm{\zeta}$
 is a simplex, which means that is it satisfies $\zeta_i \in [0,1]$ and
 $\sum_{i = 1}^C \zeta_i = 1$ with $C$ being the number of categories
-(highest possible integer). If the monotonic effect is used in a
-linear model and the lowest category of $\bm{x}$ is $0$, $b$ can be
-interpreted as the expected difference between the highest and the
+(highest possible ~~integer~~index). If the monotonic effect is used
+in a linear model and the lowest category of $\bm{x}$ is $0$, $b$ can
+be interpreted as the expected difference between the highest and the
 lowest category of $\bm{x}$, while $\zeta_i$ describes the expected
 difference between the categories $i$ and $i - 1$ in the form of a
 proportion of the overall difference $b$. Thus, the above
-parameterization emits an intuitive interpretation while guaranteeing
-the monotonicity of the effect (see Appendix A for a formal
-proof). For notational convenience we define $\mo(x, \bm{\zeta}) =
-\sum_{i = 1}^{x} \zeta_i$ and call $\mo()$ the *monotonic
-transform*. As visualized in Figure \@ref(fig:moplot), we can
-understand monotonic effects as implying a piecewise linear curve of
-which all components have the same sign. In a simple linear model,
-monotonic effects are equivalent to categorical isotonic regression
-(see Appendix A).
+parameterization ~~emits~~ \textcolor{blue}{has \emph{(or accepts ?)}}
+an intuitive interpretation while guaranteeing the monotonicity of the
+effect (see Appendix A for a formal proof). For notational convenience
+we define $\mo(x, \bm{\zeta}) = \sum_{i = 1}^{x} \zeta_i$ and call
+$\mo()$ the *monotonic transform*. As visualized in Figure
+\@ref(fig:moplot), we can understand monotonic effects as implying a
+piecewise linear curve of which all components have the same sign. In
+a simple linear model, monotonic effects are equivalent to categorical
+isotonic regression (see Appendix A).
 
 ```{r moplot, fig.cap="Visualization of a monotonic effect with four categories. Parameters were set to $b = 100$ and $\\bm{\\zeta} = (0.6, 0.3, 0.1)$."}
 dat <- data.frame(x = 0:3, y = c(0, 60, 90, 100))
@@ -313,7 +324,13 @@ where $\bm{\zeta}_{xb_2}$ and $\bm{\zeta}_{xb_3}$ are two independent
 simplex parameters. Under this formulation, $\bm{x}$ may not
 necessarily be conditionally monotonic for all values of $\bm{z}$ (see
 Appendix A for a counter example). Rather the monotonicity being
-modeled depends on the chosen parameterization. For instance, if the
+modeled depends on the chosen parameterization.
+
+\ECNote{This is \textbf{important}, and should be recalled and further
+discussed in the ``Conclusion''. There, I propose something ``light''
+(one sentence), but will have to think a bit more about this.}
+
+For instance, if the
 predictor $\bm{z}$ is dummy coded as $0$ and $1$ representing the two
 categories of a dichotomous variable, the formulation above models the
 effect of $\bm{x}$ to be monotonic for category $0$ as well as for the
@@ -350,12 +367,12 @@ package.
 The present paper describes monotonic effects as embedded in a fully
 Bayesian framework. We consider every statistical models a *Bayesian*
 model if it quantifies the uncertainty in all observed and unobserved
-variables by means of probabilities. This is often expressed in terms
-of Bayes' Theorem, which states that the posterior distribution
-$p(\theta | y)$ of the model parameters $\theta$ given the data $y$
-can be expressed in terms of the product of likelihood $p(y | \theta)$
-and prior distribution $p(\theta)$ as well as a normalizing constant
-$p(y)$:
+variables \textcolor{blue}{(including the parameters)} by means of
+probabilities. This is often expressed in terms of Bayes' Theorem,
+which states that the posterior distribution $p(\theta | y)$ of the
+model parameters $\theta$ given the data $y$ can be expressed in terms
+of the product of likelihood $p(y | \theta)$ and prior distribution
+$p(\theta)$ as well as a normalizing constant $p(y)$:
 
 \begin{equation}
 p(\theta | y) = \frac{p(y | \theta) p(\theta)}{p(y)}
@@ -365,6 +382,10 @@ A thorough introduction to Bayesian statistics is outside the scope of
 the present paper. Instead, we refer to well established text books
 such as @mcelreath_statistical_2016, @kruschke_doing_2014, and
 @gelman_bayesian_2013.
+
+\ECNote{I'm not very fond of Kruschke's textbook (a bit too dumbed
+down to my taste\dots). OTOH, Gelman's is more of a a reference than
+an introduction (written for postgrads or math undergrads).}
 
 With respect to monotonic effects, a fully Bayesian framework has two
 main implications. First, such a framework allows to incorporate
@@ -391,6 +412,11 @@ predictor. Alternatively, one may use an improper flat prior that
 treats all real values as being equally likely _a priori_ in the hope
 that the data alone is sufficient to identify $b$. We will come back
 to this in the discussion of our case study.
+
+\ECNote{Beware in what follows : a monotonic predictor with $C$
+categories has only $C-1$ differences between categories. You should
+clarify that (maybe changing the notations to use $D$ as the number of
+differences ?).}
 
 Setting a prior on the simplex parameter $\bm{\zeta}$ requires a
 different approach. The canonical prior of a simplex parameter is the
@@ -456,6 +482,9 @@ the elements $\zeta_i$, which can be computed as
 \text{SD}(\zeta_i) = \sqrt{\frac{\alpha_i (\alpha_0 - \alpha_i)}{(\alpha_0^2 (\alpha_0 + 1)}}.
 \end{equation}
 
+\ECNote{A reference (or proof in appendix) for this result would be
+welcome\dots}
+
 Although the standard deviation is an imperfect measure of variability
 for the Dirichlet distribution as the latter is not symmetric in
 general, we still believe the former to be helpful in better
@@ -479,18 +508,22 @@ sd_dirichlet(c(9, 3, 3, 3))[2]` else.
 Alternatively, and perhaps favorably, we can directly plot the
 marginals of the Dirichlet distribution. These marginal priors are
 known to be beta distributions with shape parameters $s_1 = \alpha_i$
-and $s_2 = \alpha_0 - \alpha_i$. For $\bm{\alpha} = (9, 3, 3, 3)$, the
-marginal distributions of $\zeta$ are exemplified in Figure
-\ref{fig:mbeta}. All of the above approaches to better understand the
-Dirichlet prior have in common that they ignore the dependencies
-between elements of $\bm{\zeta}$. More precisely, elements of
-$\bm{\zeta}$ are always negatively correlated as an increase in one
-element needs to be reflected in a decrease in the other elements to
-satisfy the sum-to-one constraint. A possible solution would be to
-plot the multivariate density of the Dirichlet prior, but this will
-become increasingly hard for higher dimensional $\bm{\zeta}$ (i.e.,
-for variables with more than three categories) and so we do not
-illustrate this approach in the present paper.
+and $s_2 = \alpha_0 - \alpha_i$.
+
+\ECNote{Again, reference or proof welcome\dots}
+
+For $\bm{\alpha} = (9, 3, 3, 3)$, the marginal distributions of
+$\zeta$ are exemplified in Figure \ref{fig:mbeta}. All of the above
+approaches to better understand the Dirichlet prior have in common
+that they ignore the dependencies between elements of
+$\bm{\zeta}$. More precisely, elements of $\bm{\zeta}$ are always
+negatively correlated as an increase in one element needs to be
+reflected in a decrease in the other elements to satisfy the
+sum-to-one constraint. A possible solution would be to plot the
+multivariate density of the Dirichlet prior, but this will become
+increasingly hard for higher dimensional $\bm{\zeta}$ (i.e., for
+variables with more than three categories) and so we do not illustrate
+this approach in the present paper.
 
 ```{r mbeta, fig.cap = "Densities of marginal priors of $\\zeta_1$ and $\\zeta_2$ for $\\bm{\\alpha} = (9, 3, 3, 3)$. The marginal priors of $\\zeta_3$ and $\\zeta_4$ are in this case identical to the one of $\\zeta_2$.", fig.height=3}
 x <- seq(0, 1, 0.001)
@@ -503,15 +536,28 @@ pl2 <-  data.frame(x, y = dbeta(x, 3, 15)) %>%
 pl1 + pl2
 ```
 
+\ECNote{Here, we should discuss \textsf{R}'s \texttt{ordered factor}
+type and its use by mainstream regression packages (\texttt{lm},
+\texttt{glm}, \texttt{(g)lmer} and the like\dots), which treat them as
+(equally-spaced) numeric points and proceed to a polynomial regression
+with Chebychev polynomials, thus giving estimates and SDs for a
+linear, quadratic, cubic, etc\dots terms.
+
+Our approach is fundamentally different (and, I think, better). We
+should at least show an example (a simple linear regression ?)
+comparing the two approaches\dots}
+
 # Implementation in brms
 
 The brms package [@brms1; @brms2] provides an interface to fit
-Bayesian generalized (non-)linear multilevel models using Stan
-[@carpenter2017; @stanM2017], which is a C++ package for performing
-full Bayesian inference (see also http://mc-stan.org/). It supports a
-wide range of distributions, allowing users to fit -- among others --
-linear, count data, survival, response times, ordinal, zero-inflated,
-and even self-defined mixture models all in a multilevel context.
+Bayesian generalized (non-)linear
+\textcolor{blue}{(}multilevel\textcolor{blue}{) regression} models
+using Stan [@carpenter2017; @stanM2017], which is a C++ package for
+performing full Bayesian inference (see also http://mc-stan.org/). It
+supports a wide range of distributions, allowing users to fit -- among
+others -- linear, count data, survival, response times, ordinal,
+zero-inflated, and even self-defined mixture models all in a
+multilevel context.
 
 In brms, monotonic effects are fully integrated into the formula
 syntax, which builds on and extends standard R formula syntax as well
@@ -542,6 +588,9 @@ will use *different* simplex parameters for different terms of the
 same monotonic variable (e.g., for the main effect of `x` and the
 interaction of `x` and `z`). This results is much greater modeling
 flexibility as explained in the former section.
+
+\ECNote{What happens when $z$ is an \textsf{R}'s \texttt{ordered
+factor} ?}
 
 An especially well developed feature of brms is its multilevel formula
 syntax allowing to model, for instance, hierarchically nested data
@@ -715,6 +764,9 @@ w12 <- model_weights(fit1, fit2, weights = "waic")
 model_weights(fit1, fit2, weights = "waic")
 ```
 
+\ECNote{What about other means of comparison (\texttt{loo}, Bayes
+factor\dots) ?}
+
 This yields a weight of `r round(w12[1], 2) * 100`% for the monotonic
 model, again providing evidence that a linear model may be too
 restrictive to adequately describe the relationship between
@@ -843,6 +895,9 @@ $\bm{\zeta}$ do not influence predictions as long as $b$ is small. In
 other words, a monotonic predictor with a close to zero effect
 naturally reduces to a simple linear predictor.
 
+\ECNote{Should we try to compare with a recoding of the predictors as
+\texttt{ordered factor}s and ordinary regression ?}
+
 # Conclusion
 
 In the present paper, we introduced a principled approach to including
@@ -857,11 +912,17 @@ together with multilevel structures. They are fully supported in the
 brms R package, which fits Bayesian regression models using Stan and
 provides an intuitive user interface based on widely known R formula
 syntax. To date, ordinal predictors are still mostly treated as either
-nominal or metric thus under- or overestimating the contained
+nominal or metric thus under- or
+over~~estimating~~\textcolor{blue}{stating} the contained
 information. Monotonic effects avoid these problems but still allow
 for an intuitive interpretation of the estimated parameters. In
 summary, we hope that monotonic effects can solve some longstanding
 problems in the treatment of ordinal predictors.
+
+\textcolor{blue}{As illustrated in the case of interactions of a
+monotonic and a numeric parameter, the use of monotonic predictors
+introduce new subtleties in the parameterization of a model, which may
+highlight structural information.}
 
 Monotonic effects have been implemented in brms for about two years at
 the time of writing this paper, which allowed us (and users of brms)
@@ -893,6 +954,9 @@ interval constructed based on approximate standard errors will likely
 be inappropriate in many cases. For these reasons, we chose not to
 investigate the frequentist properties of monotonic effects any
 further in the present paper.
+
+\ECNote{If we discuss the \texttt{ordered factor}/polynomial
+regression approach, we should discuss the differences here\dots}
 
 Although our primary focus was the use of monotonic effects for
 modeling strictly ordinal predictors, we want to point out that
