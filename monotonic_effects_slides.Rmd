@@ -1,0 +1,315 @@
+---
+title: "Handling Ordinal Predictors in Regression Models via Monotonic Effects"
+author: "Paul Bürkner & Emmanuel Charpentier"
+date: "EAM Conference 2018"
+output: 
+ beamer_presentation:
+   #toc: True
+   theme: "metropolis"
+   fig_width: 4  # 6
+   fig_height: 2.8  # 4.5
+   df_print: kable
+   pandoc_args: "--pdf-engine=xelatex"
+   slide_level: 2
+   includes:
+      in_header: theme_options.tex
+editor_options: 
+  chunk_output_type: console
+bibliography:
+  - monotonic_effects.bib
+csl: apa-annotated-bibliography.csl
+encoding: UTF-8
+nocite: |
+  @gertheiss2009
+---
+
+```{r setup, include=FALSE}
+options(width = 100)
+knitr::opts_chunk$set(cache = TRUE)
+
+# define a hook to allow font size changes in beamer:
+# from https://stackoverflow.com/questions/26372138/beamer-presentation-rstudio-change-font-size-for-chunk
+knitr::knit_hooks$set(mysize = function(before, options, envir) {
+  if (before) 
+    return(options$size)
+})
+
+library(tidyverse)
+library(patchwork)
+library(brms)
+theme_set(theme_default())
+```
+
+## Linear Regression
+
+Assume that the predictor term $\eta$ is a linear combination of the predictor variables multiplied by the regression coefficents:
+
+$$\eta = b_0 + \sum_{k=1}^K b_k x_{k}$$
+
+Predictors $x_k$ may be
+
+- continuous variables
+- coded categorical variables
+
+\bigskip
+
+\centering
+**What about ordinal predictors?**
+
+
+## Monotonic Effects: Idea
+
+```{r, echo=FALSE, fig.width=6, fig.height=4.2}
+dat <- data.frame(x = 0:3, y = c(0, 60, 90, 100))
+
+arrow_dat <- data.frame(
+  x = c(0, 0, 1, 1, 2, 2),
+  y = c(2, 98, 2, 58, 62, 88),
+  group = c(1, 1, 2, 2, 3, 3)
+)
+  
+ggplot(dat, aes(x, y)) + 
+  geom_line(size = 1.5) +
+  geom_line(
+    aes(group = group),
+    data = arrow_dat,
+    arrow = arrow(length=unit(0.30, "cm"), ends="both", type = "closed")
+  ) +
+  scale_y_continuous(breaks = seq(0, 100, 10)) +
+  theme(text = element_text(size = 13)) +
+  annotate(
+    'text', x = 0.1, y = 55, 
+    label = "b",
+    parse = TRUE, size=10
+  ) +
+  annotate(
+    'text', x = 1.3, y = 25, 
+    label = "b~zeta[1]",
+    parse = TRUE, size=10
+  ) + 
+  annotate(
+    'text', x = 2.3, y = 75, 
+    label = "b~zeta[2]",
+    parse = TRUE, size=10
+  )
+```
+
+
+## Monotonic Effects: Mathematical Formulation
+
+Monotonic regression of an ordinal predictor $x \in \{0, ..., C\}$:
+$$
+\eta = b_0 + b \sum_{i = 1}^{x} \zeta_i
+$$
+
+- For notational convenience: $\sum_{i = 1}^{0} \zeta_i = 0$
+- Parameter $\zeta$ is a simplex: $\zeta_i \in [0,1]$ and $\sum_{i = 1}^C \zeta_i = 1$
+- Parameter $b$ may be any real value
+
+Implications:
+
+- Effect of $x$ is either monotonically increasing or decreasing
+- $b$ indicates the direction and scale of the effect
+- Categories are equidistant if and only if $\zeta_i = 1/C$
+
+
+## Monotonic Effects: Interactions
+
+Ordinary Regression model including the interaction of $z$ and $x$:
+$$
+\eta = b_0 + b_1 \, z + b_2 \, x +  b_3 \, z \, x
+$$
+
+Generalization to monotonic effects:
+
+- Define $\text{mo}(x, \zeta) := \sum_{i = 1}^{x} \zeta_i$ for brevity
+- Replace $x$ with $\text{mo}(x, \zeta)$:
+$$
+\eta = b_0 + b_1 \, z + b_2 \, \text{mo}(x, \zeta_{b_2}) +  b_3 \, z \, \text{mo}(x, \zeta_{b_3})
+$$
+
+- Relation of $\zeta_{b_2}$ and $\zeta_{b_3}$ determines the type of monotonicty
+- $x$ is (conditionally) monotonic for all $z$ if $\zeta_{b_2} = \zeta_{b_3}$
+
+
+## Monotonic Effects in a Bayesian Framework
+
+Priors on $b$:
+
+- Any reasonable prior for regression coefficients
+- For instance: $b \sim \mathcal{N}(0, s)$ for a fixed standard deviation $s$
+
+Prior on $\zeta$:
+
+- Dirichlet prior: $\zeta \sim \mathcal{D}(\alpha)$
+- $\alpha$: Concentration parameter of the same length as $\zeta$
+
+Let $\alpha_0 = \sum_{i = 1}^{C} \alpha_i$, then:
+$$
+\mathbb{E}(\zeta_i) = \frac{\alpha_i}{\alpha_0}
+$$
+$$
+\text{SD}(\zeta_i) = \sqrt{\frac{\alpha_i (\alpha_0 - \alpha_i)}{(\alpha_0^2 (\alpha_0 + 1)}}
+$$
+
+## Dirichlet Prior: Visualization for $\alpha = (2, 1.5, 1)$
+
+\centering
+
+```{r, echo=FALSE, fig.width=3.3, fig.height=3.3}
+# knitr::include_graphics("graphics/Dirichlet-3d-panel.png")
+alpha <- c(2, 1.5, 1)
+step <- 0.001
+df <- seq(step, 1 - step, step) %>%
+  map(~cbind(., seq(step, 1 - ., step))) %>%
+  map(as_data_frame) %>%
+  bind_rows() %>%
+  setNames(c("x1", "x2")) %>%
+  mutate(
+    x3 = 1 - x1 - x2,
+    density = MCMCpack::ddirichlet(cbind(x1, x2, x3), alpha)
+  ) %>%
+  filter(!is.na(density)) %>%
+  identity()
+
+ggplot(df, aes(x1, x2, fill = density)) +
+  geom_raster() +
+  scale_fill_viridis_c() +
+  guides(fill = FALSE)
+```
+
+## Monotonic effects in the R package brms
+
+**brms** is a comprehensive framework for Bayesian regression models
+
+**Stan** is used for the model fitting behind the scenes
+
+Monotonic effects are fully built into the formula syntax of brms
+
+\bigskip
+
+Monotonic effect of $x$ on $y$:
+```{r, eval = FALSE}
+y ~ mo(x)
+```
+
+Main effects and interaction of $x$ and $z$:
+```{r, eval = FALSE}
+y ~ mo(x) * z
+```
+
+Varying effect of $x$ over group $g$:
+```{r, eval = FALSE}
+y ~ mo(x) + (mo(x) | g)
+```
+
+
+## Case Study: Measures of Chronic Widespread Pain (CWP)
+
+Objective: Predict subjective physical health by measures of CWP
+
+\bigskip
+
+Examples for CWP measures:
+
+- Impairments in walking
+- Impairments in moving around
+
+Scale from $0$ ('no problem') to $4$ ('complete problem')
+
+Data provided in the **ordPens** package
+
+For details see @gertheiss2011CWP
+
+\bigskip
+
+Plausible assumption: CWP measures have **monotonic effects**
+
+## Case Study: Model Specification
+
+```{r, echo=FALSE}
+data("ICFCoreSetCWP", package = "ordPens")
+cwp <- ICFCoreSetCWP %>% select(-starts_with("e"))
+```
+
+```{r fit1, results="hide", message=FALSE, warning = FALSE}
+library(brms)
+fit1 <- brm(phcs ~ mo(d450) + mo(d455), data = cwp)
+```
+
+```{r, echo=FALSE, fig.width=7, fig.height = 4}
+pme1 <- plot(marginal_effects(fit1), plot = FALSE, ask = FALSE)
+(pme1[[1]] + xlab("d450 (walking)")) +
+  (pme1[[2]] + xlab("d455 (moving around)")) +
+  plot_layout(ncol = 2)
+```
+
+
+## Other Approaches for Modelling Ordinal Predictors
+
+Categorical isotonic regression:
+
+- Estimate group means of ordinal categories such that $\mu_0 < \mu_1 < ... < \mu_C$
+- Equivalent to monotonic effects in simple cases
+- Harder to penalize via priors
+
+Penalized regression [@gertheiss2009]:
+
+- Apply dummy coding on the ordinal variable
+- Penalize larger differences between adjacent categories via 
+$$J(b) =\sum_{i = 1}^C (b_i - b_{i-1})^2$$
+- Closely related to regression splines
+- No monotonicity constraint
+
+## Learn More about Monotonic Effects and brms
+
+Manuscript draft:
+https://github.com/paul-buerkner/monotonic-effects-paper
+
+Vignette in brms: `vignette("brms_monotonic")`
+
+Documentation of the formula syntax: `?brmsformula`
+
+Papers about brms: @brms1 and @brms2
+
+Forums: http://discourse.mc-stan.org/
+
+Email: paul.buerkner@gmail.com
+
+Twitter: \@paulbuerkner
+
+
+## References
+
+<div id="refs"></div>
+
+## 
+
+\centering
+\LARGE{Appendix}
+
+
+## Counter Example to the Conditional Monotonicity
+
+Model: $\eta = b_0 + b_1 \, z + b_2 \, \text{mo}(x, \zeta_{b_2}) +  b_3 \, z \, \text{mo}(x, \zeta_{b_3})$
+
+```{r, echo=FALSE}
+dat <- data.frame(
+  x = c(0:2, 0:2), 
+  y = c(0, 80, 100, 0, 70, 40),
+  z = rep(c("0", "1"), each = 3)
+)
+dat_diff <- data.frame(
+  x = 0:2,
+  y = c(0, 10, 60)
+)
+ggplot(dat, aes(x, y, col = z)) + 
+  geom_line(size = 1.5) +
+  geom_line(
+    aes(x, y), inherit.aes = FALSE, 
+    dat = dat_diff, size = 1.5, linetype = 2#
+  ) + 
+  scale_y_continuous(breaks = seq(0, 100, 10)) +
+  scale_x_continuous(breaks = seq(0, 2, 1))
+```
+
