@@ -237,6 +237,27 @@ Similarly, there are two cases of ordered independant variables :
 	possible to impose restrictions on $f$ forcing it to be
 	isotonic. We shall not delve into this case in the present
 	paper.
+
+\ECNote{This might be implemented in \texttt{brms}, since the existence
+of the \texttt{mo()} notation allows us to invoke it on \texttt{numeric}
+variables. However :
+\begin{itemize}
+
+\item the (increasing) monotonicity of a gaussian process may be ensured
+by a positive prior of its correlation parameters ; finding
+"reasonable" default priors is not as easy...
+
+\item the monotonicity of a spline is in general harder to
+express. However, ISTR that, for a *cubic* spline, one could force two
+of the roots of the polynomial to be complex, thus ensuring that the
+cubic is monotonous over R. I also STR that this is a bit of algebraic
+pain in the ass. Furthermore, finding a parameterization giving some
+meaning to priors does not look easy.
+
+\end{itemize}
+
+Should we delve into this direction ?
+}
 	
   * A discrete ordered variable can have its values replaced by a set
     of increasing numerical values (under suitable constraints
@@ -245,19 +266,22 @@ Similarly, there are two cases of ordered independant variables :
 For this latter case (discrete ordered variables), a customary
 treatment is to recode the values of the variable by successive
 integers, and to proceed to a regression using the values of
-successive Chebychev polynomials[^Chebychev]  at the data points to model linear,
-quadratic, cubic, etc... terms.
+successive Chebychev polynomials[^Chebychev] at the data points to
+model linear, quadratic, cubic, etc... terms.
 
-If this treatment may hint at monotonicity (by predominance of the
+If this treatment[^ROF] may hint at monotonicity (by predominance of the
 (absolute) values of the odd-powered terms over the (absolute) values
-of the even-powered terms, it does not offer any direct way to enforce
-monotonicity.
+of the even-powered terms, it does not offer any direct way to test or
+enforce monotonicity.
 
 This justifies the construction of a model of a monotonic effect.
 
 [^Chebychev]: These terms can be shown to be statistically
     independent, which is a necessary condition for inference in the
     linear model and its derivatives. 
+
+[^ROF]: This is the default processing of `ordered factors` in many `R`
+    "standard" procedures such as `(g)lm(er)`.
 
 ## Modeling of a monotonic effect
 
