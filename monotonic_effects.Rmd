@@ -333,7 +333,7 @@ which is \textbf{not} 0. \emph{This inconsistency must be resolved.}
 is a simplex, which means that is it satisfies $\zeta_i \in [0,1]$ and
 $\sum_{i = 1}^C \zeta_i = 1$ with $C$ being the number of categories
 (highest possible ~~integer~~index). If the monotonic effect is used
-in a linear model and the lowest category of $\bm{x}$ is $0$, $b$ can
+in a linear model and the lowest category of $\bm{x}$ is $0$[^IO], $b$ can
 be interpreted as the expected difference between the highest and the
 lowest category of $\bm{x}$, while $\zeta_i$ describes the expected
 difference between the categories $i$ and $i - 1$ in the form of a
@@ -347,6 +347,11 @@ $\mo()$ the *monotonic transform*. As visualized in Figure
 piecewise linear curve of which all components have the same sign. In
 a simple linear model, monotonic effects are equivalent to categorical
 isotonic regression (see Appendix A).
+
+[^IO]: Note that this convention differs of the one customarily used
+    in statistical software, where indices of vectors, matrices
+    etc... usually start at 1. This apparent complication eases the
+    expression of many algorithms.
 
 ```{r moplot, fig.cap="Visualization of a monotonic effect with four categories. Parameters were set to $b = 100$ and $\\bm{\\zeta} = (0.6, 0.3, 0.1)$."}
 dat <- data.frame(x = 0:3, y = c(0, 60, 90, 100))
