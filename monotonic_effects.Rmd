@@ -206,6 +206,61 @@ monotonic effects are presented in the Appendix.
 
 # Monotonic Effects
 
+## Preliminary remark
+
+The notion of a monotonic regression model has no meaning but when
+both the dependent and independent variables are ordered.
+
+Except for multinomial regression (not studied here), the dependent
+variable is always ordered (or order-able, though ordering the set
+{False, True} may seem pretty arbitrary...) ; two cases have practical
+meaning : 
+
+  * (linear) regression _proprio dictu_ (where the dependent variable
+    is supposed to be real), and 
+
+  * polychoric ordered regression, where the independant variable is
+    modeled as the expression of a latent (real) variable, itself
+    supposed to be real.
+
+Similarly, there are two cases of ordered independant variables :
+
+  * A continuous variable may be used as numerical values, either
+	directly (e. g. linear regression) or indirectly (what is used is
+	a function $f$ of the independent variable). When the variable is
+	used directly, the order is preserved, of course. If $f$ is
+	explicitly specified, the preservation of order can be done
+	analytically.
+	
+	An ``interesting'' case happens when $f$ is (at least partly)
+	unspecified (e. g. spline or gaussian process) , it may be
+	possible to impose restrictions on $f$ forcing it to be
+	isotonic. We shall not delve into this case in the present
+	paper.
+	
+  * A discrete ordered variable can have its values replaced by a set
+    of increasing numerical values (under suitable constraints
+    ensuring identifiability).
+	
+For this latter case (discrete ordered variables), a customary
+treatment is to recode the values of the variable by successive
+integers, and to proceed to a regression using the values of
+successive Chebychev polynomials[^Chebychev]  at the data points to model linear,
+quadratic, cubic, etc... terms.
+
+If this treatment may hint at monotonicity (by predominance of the
+(absolute) values of the odd-powered terms over the (absolute) values
+of the even-powered terms, it does not offer any direct way to enforce
+monotonicity.
+
+This justifies the construction of a model of a monotonic effect.
+
+[^Chebychev]: These terms can be shown to be statistically
+    independent, which is a necessary condition for inference in the
+    linear model and its derivatives. 
+
+## Modeling of a monotonic effect
+
 A predictor which we want to model as monotonic must ~~be integer
 valued~~ \textcolor{blue}{have discrete values in an ordered set and
 be represented (coded) by integers}. The integers may represent, for
