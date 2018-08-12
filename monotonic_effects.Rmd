@@ -211,19 +211,19 @@ monotonic effects are presented in the Appendix.
 The notion of a monotonic regression model has no meaning but when
 both the dependent and independent variables are ordered.
 
-Except for multinomial regression (not studied here), the dependent
-variable is always ordered (or order-able, though ordering the set
-{False, True} may seem pretty arbitrary...) ; two cases have practical
-meaning : 
+Except for categorical or multinomial regression (not relevant here),
+the dependent variable is always ordered (or order-able, though
+ordering the set {False, True} may seem pretty arbitrary...) ; two
+cases have practical meaning :
 
   * (linear) regression _proprio dictu_ (where the dependent variable
     is supposed to be real), and 
 
-  * polychoric ordered regression, where the independant variable is
+  * polychoric ordered regression, where the independent variable is
     modeled as the expression of a latent (real) variable, itself
     supposed to be real.
 
-Similarly, there are two cases of ordered independant variables :
+Similarly, there are two cases of ordered independent variables :
 
   * A continuous variable may be used as numerical values, either
 	directly (e. g. linear regression) or indirectly (what is used is
@@ -233,7 +233,7 @@ Similarly, there are two cases of ordered independant variables :
 	analytically.
 	
 	An ``interesting'' case happens when $f$ is (at least partly)
-	unspecified (e. g. spline or gaussian process) , it may be
+	unspecified (e. g. spline or Gaussian process) , it may be
 	possible to impose restrictions on $f$ forcing it to be
 	isotonic. We shall not delve into this case in the present
 	paper.
@@ -260,8 +260,8 @@ Should we delve into this direction ?
 }
 	
   * A discrete ordered variable can have its values replaced by a set
-    of increasing numerical values (under suitable constraints
-    ensuring identifiability).
+    of increasing (resp. decreasing) numerical values (under suitable
+    constraints ensuring identifiability).
 	
 For this latter case (discrete ordered variables), a customary
 treatment is to recode the values of the variable by successive
