@@ -523,7 +523,17 @@ $\bm{\alpha}$ imply higher _a priori_ values of $\zeta_i$. Moreover, the
 higher the sum over $\bm{\alpha}$, the higher the certainty in each of
 the proportions $w_i$.
 
-In the absence of any problem-specific information, a reasonable default prior on $\bm{\zeta}$ would surely be one that assumed all differences between adjacent categories to be the same on average while being considerably uncertain about this expectation. Such a prior would imply, on average, a linear trend but with enough uncertainty to allow for all other possible monotonic trends as well. The Dirichlet prior with a constant $\bm{\alpha} = 1$ puts equal probability on all valid simplex and can thus be understood as the multivariate generalization of the uniform prior on simplexes. Since we have $w_i = 1/(C-1)$, this prior centers $\bm{\zeta}$ around a linear trend with large uncertainty and thus appears to be a good default prior in the absence of any problem-specific information.
+In the absense of any problem specific information, a reasonable default prior
+on $\bm{\zeta}$ would surely be one that assumed all differences between
+adjacent categories to be the same on average while being considerably uncertain
+about this expectation. Such a prior would imply, on average, a linear trend but
+with enough uncertainty to allow for all other possible monotonic trends as
+well. The Dirichlet prior with a constant $\bm{\alpha} = 1$ puts equal
+probability on all valid simplex and can thus be understood as the multivariate
+generalization of the uniform prior on simplexes. Since we have $w_i = 1/C$,
+this prior centers $\bm{\zeta}$ around a linear trend with large uncertainty and
+thus appears to be a good default prior in the absense of any problem specific
+information.
 
 ## Penalizing larger changes between categories
 
