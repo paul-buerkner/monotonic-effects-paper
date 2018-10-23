@@ -15,31 +15,30 @@ affiliation:
   - id: 2
     institution: Assistance publique - Hôpitaux de Paris, France
 abstract: |
-  Ordinal predictors are commonly used in regression models. Yet, they are
-  often incorrectly treated as either nominal or metric thus under- or 
-  overestimating the contained information. This is understandable insofar
-  as generally applicable solutions or corresponding statistical software are 
-  still underdeveloped. We propose a new way of parameterizing regression 
-  coefficients of ordinal predictors, which we call monotonic effects.
-  The reparameterization is done in terms of a scale parameter $b$ taking 
-  care of the direction and size of the effect and a simplex parameter 
-  $\bm{\zeta}$ modeling the normalized differences between categories. 
-  This ensures that predictions are monotonically increasing or decreasing,
-  while changes between adjacent categories may vary across categories.
-  This formulation nicely generalizes to both interaction terms as well
-  as multilevel structures. Monotonic effects may not only be applied to
-  ordinal predictors, but also to other discrete variables for which a
-  monotonic relationship is plausible. This includes variables representing
-  count data or discrete points in time. Fitting monotonic effects in a
-  fully Bayesian framework is straightforward with the R package brms,
-  which also allows to incorporate prior information and to check the
-  assumption of monotonicity. 
+  Ordinal predictors are commonly used in regression models. Yet, they are often
+  incorrectly treated as either nominal or metric thus under- or overestimating
+  the contained information. This is understandable insofar as generally
+  applicable solutions or corresponding statistical software are still
+  underdeveloped. We propose a new way of parameterizing regression coefficients
+  of ordinal predictors, which we call monotonic effects. The reparameterization
+  is done in terms of a scale parameter $b$ taking care of the direction and
+  size of the effect and a simplex parameter $\bm{\zeta}$ modeling the
+  normalized differences between categories. This ensures that predictions are
+  monotonically increasing or decreasing, while changes between adjacent
+  categories may vary across categories. This formulation nicely generalizes to
+  both interaction terms as well as multilevel structures. Monotonic effects may
+  not only be applied to ordinal predictors, but also to other discrete
+  variables for which a monotonic relationship is plausible. This includes
+  variables representing count data or discrete points in time. Fitting
+  monotonic effects in a fully Bayesian framework is straightforward with the R
+  package brms, which also allows to incorporate prior information and to check
+  the assumption of monotonicity.
 keywords: Regression, Isotonic, Ordinal variables, Bayesian statistics, brms, Stan, R
 lang: english
-class: man
+class: doc
 lineno: yes
 figsintext: true
-numbersections: true
+numbersections: false
 encoding: UTF-8
 bibliography:
    - monotonic_effects.bib
@@ -53,7 +52,9 @@ header-includes:
    - \usepackage{textcomp}
    - \usepackage{graphicx,pdflscape}
    - \usepackage{geometry}
-   - \usepackage{amsmath}
+   # - \usepackage{amsmath}
+   - \usepackage{amsthm}
+   - \newtheorem{thm}{Proposition}
    - \usepackage{bm}
    - \usepackage{float}
    - \usepackage{supertabular}
@@ -69,12 +70,6 @@ header-includes:
 editor_options: 
   chunk_output_type: console
 ---
-
-<!-- Sorry : this the only way I found to have Pandoc accept the definition -->
-<!-- of a macro. Note that this has the side effect of coloring the -->
-<!-- background of the code excerpts ; I haven't been able to debug this... -->
-
-`\newcommand\ECNote[1]{\let\oldshadecolor=\shadecolor\definecolor{shadecolor}{RGB}{255,255,192}\noindent\begin{center}\begin{minipage}{0.9\textwidth}\begin{shaded}\noindent\textbf{EC Note : }#1\par\end{shaded}\end{minipage}\end{center}\par\let\shadecolor=\oldshadecolor}`{=latex}
 
 
 ```{r setup, message = FALSE, warning = FALSE, results = "hide", cache = FALSE}
@@ -104,254 +99,138 @@ options(knitr.kable.NA = '')
 # how to use papaja ? https://crsh.github.io/papaja_man/introduction.html
 ```
 
-# Introduction
+Over the last few decades, much statistical research has been devoted to
+handling ordinal response variables in regression models starting with the
+seminal paper of @mccullagh1980 [see also @agresti2010;@buerkner2018ordinal;
+@liu2005; @tutz2011 for an overview]. In Psychology, for instance, this kind of
+data is omnipresent in the form of Likert scale items, which are often treated
+as being continuous for convenience without ever testing this assumption
+[@LiddellAnalyzingordinaldata2017]. With researchers realizing the importance of
+correctly modeling ordinal responses, the related models -- often simply called
+*ordinal models* -- are now increasingly applied in scientific practice. In the
+statistical language R [@r_core_team], for instance, several packages are
+available to fit ordinal models, among others 'ordinal' [@ordinal], 'VGAM'
+[@vgam], or 'brms' [@brms1;@brms2] to name the perhaps most general ones.
 
-Over the last few decades, much statistical research has been devoted
-to handling ordinal response variables in regression models starting
-with the seminal paper of @mccullagh1980 [see also @agresti2010;
-@buerkner2018ordinal; @liu2005; @tutz2011 for an overview]. In
-Psychology, for instance, this kind of data is omnipresent in the form
-of Likert scale items, which are often treated as being continuous for
-convenience without ever testing this assumption
-[@LiddellAnalyzingordinaldata2017]. With researchers realizing the
-importance of correctly modeling ordinal responses, the related models
--- often simply called *ordinal models* -- are now increasingly
-applied in scientific practice. In the statistical language R
-[@r_core_team], for instance, several packages are available to fit
-ordinal models, among others 'ordinal' [@ordinal], 'VGAM' [@vgam], or
-'brms' [@brms1;@brms2] to name the perhaps most general ones.
+Ordinal *predictors* seem to have received less attention in statistical
+research. There are only two lines of research known to the authors of the
+present paper. One is a penalized regression approach specifically designed for
+ordinal predictors [@gertheiss2009; @gertheiss2011; @gertheiss2014] and the
+other are categorical types of isotonic regression [@barlow1972;
+@robertson1988].
 
-Ordinal *predictors* seem to have received less attention in
-statistical research. There are only two lines of research known to
-the authors of the present paper. One is a penalized regression
-approach specifically designed for ordinal predictors [@gertheiss2009;
-@gertheiss2011; @gertheiss2014] and the other are categorical types of
-isotonic regression [@barlow1972; @robertson1988].
+We begin by explaining the former approach. The main idea of the method of
+@gertheiss2009 is to penalize large differences between adjacent categories.
+This reflects the expectation that if a variable is ordinal, changes may happen
+somewhat smoothly and larger differences should thus be unlikely. This approach
+allows for a very flexible handling of ordinal predictors in a way closely
+related to regression splines [@gertheiss2009]. The direction of the changes
+remains unspecified and may vary across the range of the ordinal variable.
+Depending on the research question and variables under study, this assumption
+might be somewhat too flexible. More specifically, we do often expect the
+changes between adjacent categories to be *monotonic*, that is consistently
+negative or positive across the full range of the ordinal variable. At the same
+time, the size of the changes may still vary across categories by a substantial
+amount as ordinality does not necessarily contain information about distance
+between categories.
 
-We begin by explaining the former approach. The main idea of the
-method of @gertheiss2009 is to penalize large differences between
-adjacent categories. This reflects the expectation that if a variable
-is ordinal, changes may happen somewhat smoothly and larger
-differences should thus be unlikely. This approach allows for a very
-flexible handling of ordinal predictors in a way closely related to
-regression splines [@gertheiss2009]. The direction of the changes
-remains unspecified and may vary across the range of the ordinal
-variable. Depending on the research question and variables under
-study, this assumption might be somewhat too flexible. More
-specifically, we do often expect the changes between adjacent
-categories to be *monotonic*, that is consistently negative or
-positive across the full range of the ordinal variable. At the same
-time, the size of the changes may still vary across categories by a
-substantial amount as ordinality does not necessarily contain
-information about distance between categories.
-
-The research on *isotonic regression* deals with regression models
-subject to order constraints [@barlow1972; @robertson1988]. For
-instance, in some contexts, the effect of a drug may be assumed to be
-monotonically[^mono] increasing with an increasing dose -- an
-assumption that we often want to 'hard-code' into our
-models. Depending on the research question and nature of the variable
-on which we want to impose a monotonicity constraint, different
-techniques may be favorable. If the variable is essentially
-continuous, such as the dose of a drug, we can use parametric
-functions which are known to be monotonic (e.g., the log or logistic
-functions in simple cases) or use semi-parametric approaches such as
-monotonic splines [@kelly1990; @lee1996; @leitenstorfer2007;
-@pya2015]. If the variable under study is categorical, the
-monotonicity assumption reduces to an ordering constraint on the group
-means with respective to the response variable. From the perspective
-of classical *frequentist* statistics, the latter case has been
-studied extensively in @barlow1972 and @robertson1988 [see also
-@best1990; @dykstra1982; @lee1981; @wu2001]. For the purpose of
-studying ordinal predictors, we are primarily interested in the
-categorical type of isotonic regression.
-
-The idea and scope of the two approaches discussed above is somewhat
-different. While isotonic regression only restricts the *direction* of
-the changes, the penalized regression method restricts the *size* of
-the changes leaving the direction untouched [although we may also
-introduce order constraints in the latter according to
-@gertheiss2011]. None of these two approaches is more reasonable _per
-se_ and we should not necessarily think of them as competing in how
-ordinal predictors should ideally be modeled. Rather, they make use of
-different sets of assumptions which both reflect important aspects of
-ordinal variables. As we will see later on, we may even combine them
-naturally within the same framework.
-
-[^mono]: The term 'isotonic' is mostly used synonymously to
-    'monotonic' in the mathematical-statistical literature. We prefer
-    the latter as we believe it to be understandable by a wider
-    audience outside of mathematics.
-
-In the present paper, we will introduce a monotonicity imposing
-parameterization of ordinal predictors, which we call *monotonic
-effects*. They represent a way to generalize the assumption of
-linearity to ordinal predictors. As explained in detail in the next
-section, the estimated parameters have an intuitive meaning and are
-thus easy to interpret and communicate. In simple cases, they also
-turn out to be equivalent to the results of categorical isotonic
+The research on *isotonic regression* deals with regression models subject to
+order constraints [@barlow1972; @robertson1988]. For instance, in some contexts,
+the effect of a drug may be assumed to be monotonically[^mono] increasing with
+an increasing dose -- an assumption that we often want to 'hard-code' into our
+models. Depending on the research question and nature of the variable on which
+we want to impose a monotonicity constraint, different techniques may be
+favorable. If the variable is essentially continuous, such as the dose of a
+drug, we can use parametric functions which are known to be monotonic (e.g., the
+log or logistic functions in simple cases) or use semi-parametric approaches
+such as monotonic splines [@kelly1990; @lee1996; @leitenstorfer2007;
+@pya2015]. If the variable under study is categorical, the monotonicity
+assumption reduces to an ordering constraint on the group means with respective
+to the response variable. From the perspective of classical *frequentist*
+statistics, the latter case has been studied extensively in @barlow1972 and
+@robertson1988 [see also
+@best1990; @dykstra1982; @lee1981; @wu2001]. For the purpose of studying ordinal
+predictors, we are primarily interested in the categorical type of isotonic
 regression.
 
-The structure of this paper is a follows. In Section 2, we will
-introduce monotonic effects as well as their mathematical foundation
-in detail. We continue by explaining a software implementation of
-monotonic effects in the R package 'brms' [@brms1;@brms2], which
-supports a wide and growing range of Bayesian regression models. In
-Section 4, a case study dealing with measures of chronic widespread
-pain [@cieza2004; @gertheiss2011CWP] will be discussed, in which we
-make extensive use of monotonic effects. We end with a conclusion in
-Section 5. Some short mathematical proofs about the properties of
-monotonic effects are presented in the Appendix.
+The idea and scope of the two approaches discussed above is somewhat different.
+While isotonic regression only restricts the *direction* of the changes, the
+penalized regression method restricts the *size* of the changes leaving the
+direction untouched [although we may also introduce order constraints in the
+latter according to
+@gertheiss2011]. None of these two approaches is more reasonable _per se_ and we
+should not necessarily think of them as competing in how ordinal predictors
+should ideally be modeled. Rather, they make use of different sets of
+assumptions which both reflect important aspects of ordinal variables. As we
+will see later on, we may even combine them naturally within the same framework.
+
+[^mono]: The term 'isotonic' is mostly used synonymously to 'monotonic' in the
+mathematical-statistical literature. We prefer the latter as we believe it to be
+understandable by a wider audience outside of mathematics.
+
+In the present paper, we will introduce a monotonicity imposing parameterization
+of ordinal predictors, which we call *monotonic effects*. They represent a way
+to generalize the assumption of linearity to ordinal predictors. As explained in
+detail in the next section, the estimated parameters have an intuitive meaning
+and are thus easy to interpret and communicate. In simple cases, they also turn
+out to be equivalent to the results of categorical isotonic regression.
+
+The structure of this paper is a follows. In Section 2, we will introduce
+monotonic effects as well as their mathematical foundation in detail. We
+continue by explaining a software implementation of monotonic effects in the R
+package 'brms' [@brms1;@brms2], which supports a wide and growing range of
+Bayesian regression models. In Section 4, a case study dealing with measures of
+chronic widespread pain [@cieza2004; @gertheiss2011CWP] will be discussed, in
+which we make extensive use of monotonic effects. We end with a discussion in
+Section 5. Some short mathematical proofs about the properties of monotonic
+effects are presented in the Appendix.
 
 
 # Monotonic Effects
 
-## Preliminary remark
-
-The notion of a monotonic regression model has no meaning but when
-both the dependent and independent variables are ordered.
-
-Except for categorical or multinomial regression (not relevant here),
-the dependent variable is always ordered (or order-able, though
-ordering the set {False, True} may seem pretty arbitrary...) ; two
-cases have practical meaning :
-
-  * (linear) regression _proprio dictu_ (where the dependent variable
-    is supposed to be real), and 
-
-  * polychoric ordered regression, where the independent variable is
-    modeled as the expression of a latent (real) variable, itself
-    supposed to be real.
-
-Similarly, there are two cases of ordered independent variables :
-
-  * A continuous variable may be used as numerical values, either
-	directly (e. g. linear regression) or indirectly (what is used is
-	a function $f$ of the independent variable). When the variable is
-	used directly, the order is preserved, of course. If $f$ is
-	explicitly specified, the preservation of order can be done
-	analytically.
-	
-	An ``interesting'' case happens when $f$ is (at least partly)
-	unspecified (e. g. spline or Gaussian process) , it may be
-	possible to impose restrictions on $f$ forcing it to be
-	isotonic. We shall not delve into this case in the present
-	paper.
-
-\ECNote{This might be implemented in \texttt{brms}, since the existence
-of the \texttt{mo()} notation allows us to invoke it on \texttt{numeric}
-variables. However :
-\begin{itemize}
-
-\item the (increasing) monotonicity of a gaussian process may be ensured
-by a positive prior of its correlation parameters ; finding
-"reasonable" default priors is not as easy...
-
-\item the monotonicity of a spline is in general harder to
-express. However, ISTR that, for a *cubic* spline, one could force two
-of the roots of the polynomial to be complex, thus ensuring that the
-cubic is monotonous over R. I also STR that this is a bit of algebraic
-pain in the ass. Furthermore, finding a parameterization giving some
-meaning to priors does not look easy.
-
-\end{itemize}
-
-Should we delve into this direction ?
-}
-	
-  * A discrete ordered variable can have its values replaced by a set
-    of increasing (resp. decreasing) numerical values (under suitable
-    constraints ensuring identifiability).
-	
-For this latter case (discrete ordered variables), a customary
-treatment is to recode the values of the variable by successive
-integers, and to proceed to a regression using the values of
-successive Chebychev polynomials[^Chebychev] at the data points to
-model linear, quadratic, cubic, etc... terms.
-
-If this treatment[^ROF] may hint at monotonicity (by predominance of the
-(absolute) values of the odd-powered terms over the (absolute) values
-of the even-powered terms, it does not offer any direct way to test or
-enforce monotonicity.
-
-This justifies the construction of a model of a monotonic effect.
-
-[^Chebychev]: These terms can be shown to be statistically
-    independent, which is a necessary condition for inference in the
-    linear model and its derivatives. 
-
-[^ROF]: This is the default processing of `ordered factors` in many `R`
-    "standard" procedures such as `(g)lm(er)`.
-
-## Modeling of a monotonic effect
-
-A predictor which we want to model as monotonic must ~~be integer
-valued~~ \textcolor{blue}{have discrete values in an ordered set and
-be represented (coded) by integers}. The integers may represent, for
-instance, count data, discrete points in time, or categories of an
-ordinal variable. Since the latter is possibly the most relevant use
-case in psychology and related disciplines, we speak of predictor
-categories in the following to refer to the values of a monotonic
-predictor. As opposed to a continuous predictor, predictor categories
-are not assumed to be equidistant with respect to their effect on the
-response variable. Instead, the distance between adjacent predictor
-categories is estimated from the data and may vary across
-categories. This is realized by parameterizing as follows: One
-parameter, $b$, takes care of the direction and size of the effect
-similar to an ordinary regression parameter, while an additional
-parameter vector, $\bm{\zeta}$, estimates the normalized distances
-between consecutive predictor categories. For a single monotonic
-predictor, $\bm{x}$, the corresponding predictor term $\eta_n$ of
-observation $n$ looks as follows:
+A predictor which we want to model as monotonic must have discrete values in an
+ordered set and be coded as integers. The integers may represent, for instance,
+count data, discrete points in time, or categories of an ordinal variable. Since
+the latter is possibly the most relevant use case in psychology and related
+disciplines, we speak of predictor categories in the following to refer to the
+values of a monotonic predictor. As opposed to a continuous predictor, predictor
+categories are not assumed to be equidistant with respect to their effect on the
+response variable. Instead, the distance between adjacent predictor categories
+is estimated from the data and may vary across categories. This is realized by
+parameterizing as follows: One parameter, $b$, takes care of the direction and
+size of the effect similar to an ordinary regression parameter, while an
+additional parameter vector, $\bm{\zeta}$, estimates the normalized distances
+between consecutive predictor categories. For a single monotonic predictor,
+$\bm{x}$, with a lowest possible value of zero[^IO], the corresponding predictor
+term $\eta_n$ of observation $n$ looks as follows:
 
 \begin{equation}
 \eta_n = b \, \sum_{i = 1}^{x_n} \zeta_i
 \end{equation}
 
-\ECNote{I'm not convinced by the ``notational convenience'' introduced below : 
-\begin{itemize}
-\item indices starting at zero are common in math circles, much less
-in stats ; and \textsf{R} indexes start at 1 ;
-\item one should explicitly or implicitly note that a $n$-levels
-variable has $n-1$ distance between levels : therefore, the
-``convenience'' is to note $\zeta_1=0$, which amounts to define $\zeta_i$
-as the distance between $x_i$ and $x_{i-1}$.
-\end{itemize}
-Proposed redaction : \emph{For notational convenience, we define
-$\zeta_i$ as the (normalized) distance between $x_i$ and $x_{i-1}$ ; it follows
-that $\zeta_1=0$ (and that $\zeta_0$ is not defined).}
+For notational convenience, we define $\sum_{i = 1}^{0} \zeta_i = 0$. The
+parameter $b$ can take on any real value, while $\bm{\zeta}$ is a simplex, which
+means that is it satisfies $\zeta_i \in [0,1]$ and $\sum_{i = 1}^D \zeta_i = 1$
+with $D$ being the highest possible integer value that $\bm{x}$ can take on. 
+Since we start counting at zero, $D$ is equal to the number of differences
+between two adjacent categories and also equal to the total number of 
+categories minus one. If the monotonic effect is used in a linear
+model, $b$ can be interpreted as the expected difference between the highest and
+the lowest category of $\bm{x}$, while $\zeta_i$ describes the expected
+difference between the categories $i$ and $i - 1$ in the form of a proportion of
+the overall difference $b$. Thus, the above parameterization has an intuitive
+interpretation while guaranteeing the monotonicity of the effect (see Appendix A
+for a formal proof). For notational convenience we define $\mo(x, \bm{\zeta}) =
+\sum_{i = 1}^{x} \zeta_i$ and call $\mo()$ the *monotonic transform*. As
+visualized in Figure \@ref(fig:moplot), we can understand monotonic effects as
+implying a piecewise linear curve of which all components have the same sign. In
+a simple linear model, monotonic effects are equivalent to categorical isotonic
+regression (see Appendix A).
 
-However, this redaction is \textbf{inconsistent} with the (current
-state of the) figure~1, where $x$ indices start at 0
-and $\zeta_1$ is the normalized difference between $x_1$ and $x_0$,
-which is \textbf{not} 0. \emph{This inconsistency must be resolved.}
-
-}
-
-~~For notational convenience, we define $\sum_{i = 1}^{0} \zeta_i =
-0$.~~ The parameter $b$ can take on any real value, while $\bm{\zeta}$
-is a simplex, which means that is it satisfies $\zeta_i \in [0,1]$ and
-$\sum_{i = 1}^C \zeta_i = 1$ with $C$ being the number of categories
-(highest possible ~~integer~~index). If the monotonic effect is used
-in a linear model and the lowest category of $\bm{x}$ is $0$[^IO], $b$ can
-be interpreted as the expected difference between the highest and the
-lowest category of $\bm{x}$, while $\zeta_i$ describes the expected
-difference between the categories $i$ and $i - 1$ in the form of a
-proportion of the overall difference $b$. Thus, the above
-parameterization ~~emits~~ \textcolor{blue}{has \emph{(or accepts ?)}}
-an intuitive interpretation while guaranteeing the monotonicity of the
-effect (see Appendix A for a formal proof). For notational convenience
-we define $\mo(x, \bm{\zeta}) = \sum_{i = 1}^{x} \zeta_i$ and call
-$\mo()$ the *monotonic transform*. As visualized in Figure
-\@ref(fig:moplot), we can understand monotonic effects as implying a
-piecewise linear curve of which all components have the same sign. In
-a simple linear model, monotonic effects are equivalent to categorical
-isotonic regression (see Appendix A).
-
-[^IO]: Note that this convention differs of the one customarily used
-    in statistical software, where indices of vectors, matrices
-    etc... usually start at 1. This apparent complication eases the
-    expression of many algorithms.
+[^IO]: Note that this convention differs of the one customarily used in
+statistical software, where indices of vectors, matrices, etc. usually start at
+one. However, starting at zero eases the notation of monotonic effects and so we
+adopt this approach in the present paper.
 
 ```{r moplot, fig.cap="Visualization of a monotonic effect with four categories. Parameters were set to $b = 100$ and $\\bm{\\zeta} = (0.6, 0.3, 0.1)$."}
 dat <- data.frame(x = 0:3, y = c(0, 60, 90, 100))
@@ -365,23 +244,23 @@ ggplot(dat, aes(x, y)) +
   geom_line(
     aes(group = group),
     data = arrow_dat,
-    arrow = arrow(length=unit(0.30, "cm"), ends="both", type = "closed")
+    arrow = arrow(length = unit(0.30, "cm"), ends = "both", type = "closed")
   ) +
   scale_y_continuous(breaks = seq(0, 100, 10)) +
   annotate(
     'text', x = 0.1, y = 55, 
     label = "b",
-    parse = TRUE, size=10
+    parse = TRUE, size = 10
   ) +
   annotate(
     'text', x = 1.3, y = 25, 
     label = "b~zeta[1]",
-    parse = TRUE, size=10
+    parse = TRUE, size = 10
   ) + 
   annotate(
     'text', x = 2.3, y = 75, 
     label = "b~zeta[2]",
-    parse = TRUE, size=10
+    parse = TRUE, size = 10
   )
 ```
 
@@ -396,7 +275,7 @@ where $\bm{z}$ is another predictor. If $\bm{z}$ is monotonic as well,
 then $z_n$ is simply replaced by $\mo(z_n, \bm{\zeta}_z)$. One
 modeling choice to be made is whether different terms including
 $\bm{x}$ should have the same or different simplex parameters
-associated with $\bm{x}$. For example. a predictor term consisting of
+associated with $\bm{x}$. For example, a predictor term consisting of
 the main effects and two-way interaction between a monotonic predictor
 $\bm{x}$ and an arbitrary predictor $\bm{z}$ could be formulated as
 
@@ -410,10 +289,6 @@ necessarily be conditionally monotonic for all values of $\bm{z}$ (see
 Appendix A for a counter example). Rather the monotonicity being
 modeled depends on the chosen parameterization.
 
-\ECNote{This is \textbf{important}, and should be recalled and further
-discussed in the ``Conclusion''. There, I propose something ``light''
-(one sentence), but will have to think a bit more about this.}
-
 For instance, if the
 predictor $\bm{z}$ is dummy coded as $0$ and $1$ representing the two
 categories of a dichotomous variable, the formulation above models the
@@ -426,14 +301,14 @@ $\bm{z}$. If we fix all simplex parameters corresponding to the same
 monotonic variable $\bm{x}$ to the same value, conditionally
 monotonicity is achieved in general (proof provided in Appendix A):
 
-\begin{proposition}
+\begin{thm}
 \label{cmonotonic}
 Let $\bm{\eta}$ be an arbitrary linear predictor term containing the
 monotonic predictor $\bm{x}$ with the corresponding simplex parameter
-$\bm{\zeta}$ being the same for all terms including $\bm{x}$. Then
+$\bm{\zeta}$ being the same across all terms including $\bm{x}$. Then
 $\bm{\eta}$ is monotonic in $\bm{x}$ conditionally on all possible
 combinations of all other predictor variables.
-\end{proposition}
+\end{thm}
 
 While fixing all simplex parameters associated with $\bm{x}$ to the
 same vector guarantees conditional monotonicity, it may be not
@@ -448,15 +323,15 @@ package.
 
 ## Monotonic effects in a Bayesian framework
 
-The present paper describes monotonic effects as embedded in a fully
-Bayesian framework. We consider every statistical models a *Bayesian*
-model if it quantifies the uncertainty in all observed and unobserved
-variables \textcolor{blue}{(including the parameters)} by means of
-probabilities. This is often expressed in terms of Bayes' Theorem,
-which states that the posterior distribution $p(\theta | y)$ of the
-model parameters $\theta$ given the data $y$ can be expressed in terms
-of the product of likelihood $p(y | \theta)$ and prior distribution
-$p(\theta)$ as well as a normalizing constant $p(y)$:
+The present paper describes monotonic effects as embedded in a fully Bayesian
+framework. We consider every statistical models a *Bayesian* model if it
+quantifies the uncertainty in all observed and unobserved variables
+(conventionally denoted as data and parameters respectively) by means
+of probabilities. This is often expressed in terms of Bayes' Theorem, which
+states that the posterior distribution $p(\theta | y)$ of the model parameters
+$\theta$ given the data $y$ can be expressed in terms of the product of
+likelihood $p(y | \theta)$ and prior distribution $p(\theta)$ as well as a
+normalizing constant $p(y)$:
 
 \begin{equation}
 p(\theta | y) = \frac{p(y | \theta) p(\theta)}{p(y)}
@@ -466,10 +341,6 @@ A thorough introduction to Bayesian statistics is outside the scope of
 the present paper. Instead, we refer to well established text books
 such as @mcelreath_statistical_2016, @kruschke_doing_2014, and
 @gelman_bayesian_2013.
-
-\ECNote{I'm not very fond of Kruschke's textbook (a bit too dumbed
-down to my taste\dots). OTOH, Gelman's is more of a a reference than
-an introduction (written for postgrads or math undergrads).}
 
 With respect to monotonic effects, a fully Bayesian framework has two
 main implications. First, such a framework allows to incorporate
@@ -497,31 +368,25 @@ treats all real values as being equally likely _a priori_ in the hope
 that the data alone is sufficient to identify $b$. We will come back
 to this in the discussion of our case study.
 
-\ECNote{Beware in what follows : a monotonic predictor with $C$
-categories has only $C-1$ differences between categories. You should
-clarify that (maybe changing the notations to use $D$ as the number of
-differences ?).}
-
 Setting a prior on the simplex parameter $\bm{\zeta}$ requires a
 different approach. The canonical prior of a simplex parameter is the
 Dirichlet distribution, a multivariate generalization of the beta
 distribution [@frigyik2010]. It is non-zero for all valid simplexes
-(i.e., for $\bm{\zeta}$ with $\zeta_i \in [0,1]$ and $\sum_{i = 1}^C
+(i.e., for $\bm{\zeta}$ with $\zeta_i \in [0,1]$ and $\sum_{i = 1}^D
 \zeta_i = 1$) and zero otherwise. The Dirichlet prior has a single
 parameter vector $\bm{\alpha}$ of the same length as $\bm{\zeta}$. Its
 density is defined as
 
 \begin{equation}
-f(\bm{\zeta} | \bm{\alpha}) = \frac{1}{B(\bm{\alpha})} \prod_{i=1}^C \zeta_i^{\alpha_i - 1},
+f(\bm{\zeta} | \bm{\alpha}) = \frac{1}{B(\bm{\alpha})} \prod_{i=1}^D \zeta_i^{\alpha_i - 1},
 \end{equation}
 
-where $B(\bm{\alpha})$ is a normalizing constant. As the _a priori_
-expectation of $\zeta_i$ is given by $w_i = \mathbb{E}(\zeta_i) =
-\alpha_i / \alpha_0$, with $\alpha_0 = \sum_{i = 1}^{C} \alpha_i$,
-higher values of $\alpha_i$ in comparison to the sum over
-$\bm{\alpha}$ imply higher _a priori_ values of $\zeta_i$. Moreover, the
-higher the sum over $\bm{\alpha}$, the higher the certainty in each of
-the proportions $w_i$.
+where $B(\bm{\alpha})$ is a normalizing constant [@balakrishnan2014]. As the 
+_a-priori_ expectation of $\zeta_i$ is given by $w_i = \mathbb{E}(\zeta_i) =
+\alpha_i / \alpha_0$, with $\alpha_0 = \sum_{i = 1}^{D} \alpha_i$, higher values
+of $\alpha_i$ in comparison to the sum over $\bm{\alpha}$ imply higher _a
+priori_ values of $\zeta_i$. Moreover, the higher the sum over $\bm{\alpha}$,
+the higher the certainty in each of the proportions $w_i$.
 
 In the absense of any problem specific information, a reasonable default prior
 on $\bm{\zeta}$ would surely be one that assumed all differences between
@@ -530,7 +395,7 @@ about this expectation. Such a prior would imply, on average, a linear trend but
 with enough uncertainty to allow for all other possible monotonic trends as
 well. The Dirichlet prior with a constant $\bm{\alpha} = 1$ puts equal
 probability on all valid simplex and can thus be understood as the multivariate
-generalization of the uniform prior on simplexes. Since we have $w_i = 1/C$,
+generalization of the uniform prior on simplexes. Since we have $w_i = 1/D$,
 this prior centers $\bm{\zeta}$ around a linear trend with large uncertainty and
 thus appears to be a good default prior in the absense of any problem specific
 information.
@@ -570,20 +435,18 @@ $\bm{\alpha}$, the higher the certainty in that expectation. Thus, if
 we expect a linear trend with some certainty, we assign all elements
 of $\bm{\alpha}$ to the same value $a$. To get an intuition about what
 is a reasonable value for $a$, we may use the standard deviation of
-the elements $\zeta_i$, which can be computed as
+the elements $\zeta_i$, which can be computed as [see @balakrishnan2014]:
 
 \begin{equation}
-\text{SD}(\zeta_i) = \sqrt{\frac{\alpha_i (\alpha_0 - \alpha_i)}{(\alpha_0^2 (\alpha_0 + 1)}}.
+\text{SD}(\zeta_i) = \sqrt{\frac{\alpha_i (\alpha_0 - \alpha_i)}
+{(\alpha_0^2 (\alpha_0 + 1)}}.
 \end{equation}
-
-\ECNote{A reference (or proof in appendix) for this result would be
-welcome\dots}
 
 Although the standard deviation is an imperfect measure of variability
 for the Dirichlet distribution as the latter is not symmetric in
 general, we still believe the former to be helpful in better
 understanding the implications of ones chosen priors. For the default
-of $a = 1$ and a total of $C = 5$ categories, we get a rather large
+of $a = 1$ and a total of $D = 5$ categories, we get a rather large
 standard deviation of $\text{SD}(\zeta_i) =$ `r sd_dirichlet(rep(1,
 4))[1]`. If we set, for example, $a = 5$, we get $\text{SD}(\zeta_i)
 =$ `r sd_dirichlet(rep(5, 4))[1]` and thus much higher certainty in
@@ -591,21 +454,18 @@ changes of equal size.
 
 Of course, the process of increasing $\bm{\alpha}$ on average works
 equally well even if we do not expect all changes to be the same
-_a priori_. For instance, if $C = 5$ and we expect a $3$-times larger
+_a priori_. For instance, if $D = 5$ and we expect a $3$-times larger
 change between the first two categories than between all the other
 categories with some certainty, we may set $\bm{\alpha} = (9, 3, 3,
 3)$. As a result, we get $w_1 = 1 / 2$ and $w_i = 1 / 6$ else. As
-standard deviations, we get $\text{SD}(\zeta_1) =$ `r
-sd_dirichlet(c(9, 3, 3, 3))[1]` and $\text{SD}(\zeta_i) =$ `r
-sd_dirichlet(c(9, 3, 3, 3))[2]` else.
+standard deviations, we get $\text{SD}(\zeta_1) =$ 
+`r sd_dirichlet(c(9, 3, 3, 3))[1]` and $\text{SD}(\zeta_i) =$ 
+`r sd_dirichlet(c(9, 3, 3, 3))[2]` else.
 
 Alternatively, and perhaps favorably, we can directly plot the
 marginals of the Dirichlet distribution. These marginal priors are
 known to be beta distributions with shape parameters $s_1 = \alpha_i$
-and $s_2 = \alpha_0 - \alpha_i$.
-
-\ECNote{Again, reference or proof welcome\dots}
-
+and $s_2 = \alpha_0 - \alpha_i$ [@balakrishnan2014]. 
 For $\bm{\alpha} = (9, 3, 3, 3)$, the marginal distributions of
 $\zeta$ are exemplified in Figure \ref{fig:mbeta}. All of the above
 approaches to better understand the Dirichlet prior have in common
@@ -630,7 +490,9 @@ pl2 <-  data.frame(x, y = dbeta(x, 3, 15)) %>%
 pl1 + pl2
 ```
 
-\ECNote{Here, we should discuss \textsf{R}'s \texttt{ordered factor}
+<!--
+\ECNote{
+Here, we should discuss \textsf{R}'s \texttt{ordered factor}
 type and its use by mainstream regression packages (\texttt{lm},
 \texttt{glm}, \texttt{(g)lmer} and the like\dots), which treat them as
 (equally-spaced) numeric points and proceed to a polynomial regression
@@ -639,13 +501,14 @@ linear, quadratic, cubic, etc\dots terms.
 
 Our approach is fundamentally different (and, I think, better). We
 should at least show an example (a simple linear regression ?)
-comparing the two approaches\dots}
+comparing the two approaches\dots
+}
+-->
 
 # Implementation in brms
 
 The brms package [@brms1; @brms2] provides an interface to fit
-Bayesian generalized (non-)linear
-\textcolor{blue}{(}multilevel\textcolor{blue}{) regression} models
+Bayesian generalized (non-)linear (multilevel) regression models
 using Stan [@carpenter2017; @stanM2017], which is a C++ package for
 performing full Bayesian inference (see also http://mc-stan.org/). It
 supports a wide range of distributions, allowing users to fit -- among
@@ -683,8 +546,10 @@ same monotonic variable (e.g., for the main effect of `x` and the
 interaction of `x` and `z`). This results is much greater modeling
 flexibility as explained in the former section.
 
-\ECNote{What happens when $z$ is an \textsf{R}'s \texttt{ordered
-factor} ?}
+Variable which should be modeled as monotonic may either be integer valued or
+an ordered factor. In the latter case, the ordered factor will be transformed to
+an integer variable with the lowest factor level being identified with zero as
+described above.
 
 An especially well developed feature of brms is its multilevel formula
 syntax allowing to model, for instance, hierarchically nested data
@@ -787,11 +652,8 @@ happens for interactions of monotonic effects. Finally, we fit the
 model in brms via
 
 ```{r fit1, results="hide"}
-if (file.exists("fit1.Rds")) {
-  fit1 <- readRDS("fit1.Rds")
-} else {
-  fit1 <- brm(phcs ~ mo(d450) + mo(d455), data = cwp, prior = prior1)
-}
+fit1 <- brm(phcs ~ mo(d450) + mo(d455), data = cwp, 
+            prior = prior1, file = "fit1")
 ```
 
 ```{r, echo = TRUE, eval=FALSE}
@@ -835,11 +697,7 @@ We can also show this non-linearity using model comparison. First, we fit a line
 
 ```{r fit2, results="hide"}
 prior2 <- prior(normal(0, 2.5), class = "b")
-if (file.exists("fit2.Rds")) {
-  fit2 <- readRDS("fit2.Rds")
-} else {
-  fit2 <- brm(phcs ~ d450 + d455, data = cwp, prior = prior2)
-}
+fit2 <- brm(phcs ~ d450 + d455, data = cwp, prior = prior2, file = "fit2")
 ```
 
 ```{r, echo = TRUE, eval = FALSE}
@@ -847,57 +705,55 @@ prior2 <- prior(normal(0, 2.5), class = "b")
 fit2 <- brm(phcs ~ d450 + d455, data = cwp, prior = prior2)
 ```
 
-and then compute model weights, for instance, by means of the WAIC
-[@watanabe2010]:
+and then compute model weights, for instance, by means of the stacking
+of posterior-predictive distribution [@yao2017][^MC]:
 
 ```{r}
-w12 <- model_weights(fit1, fit2, weights = "waic")
+w12 <- model_weights(fit1, fit2, weights = "loo2")
 ```
 
 ```{r, eval=FALSE, echo=TRUE}
-model_weights(fit1, fit2, weights = "waic")
+model_weights(fit1, fit2, weights = "loo2")
 ```
 
-\ECNote{What about other means of comparison (\texttt{loo}, Bayes
-factor\dots) ?}
+[^MC]: In a Bayesian framework, models may be compared by various means for
+instance Bayes factors [@kass1995], (approximate) cross-validation methods
+[@vehtari2017], information criteria [@watanabe2010; @vehtari2017] or stacking
+of posterior-predictive distributions [@yao2017]. A discussion of the pros and
+cons of these various approaches is outside the scope of the present paper.
 
-This yields a weight of `r round(w12[1], 2) * 100`% for the monotonic
-model, again providing evidence that a linear model may be too
-restrictive to adequately describe the relationship between
-impairments in walking or moving around and subjective physical
-health.
+This yields a weight of `r round(w12[1], 2) * 100`% for the monotonic model,
+again providing evidence that a linear model may be too restrictive to
+adequately describe the relationship between impairments in walking or moving
+around and subjective physical health.
 
-In the original study of @gertheiss2011CWP on this data set, the
-purpose was to select a subset of the total of 67 CWP measures that
-are related to subjective physical health in a relevant manner. For
-the purpose of the present case study, we also aim at a form of
-variable selection but with a somewhat different focus. As most CWP
-measures show small to medium correlations with at least a few other
-CWP measures, we expect only few of them to have a considerable
-non-zero effect on subjective physical health after controlling for
-all other measures. For simplicity, we are not including
-'environmental factor' variables into our analysis as they were
-measured on a different scale (from $-4$ 'complete barrier to $4$
-'complete facilitator') as all the other variables (from $0$ 'no
-problem' to $4$ 'complete problem').
+In the original study of @gertheiss2011CWP on this data set, the purpose was to
+select a subset of the total of 67 CWP measures that are related to subjective
+physical health in a relevant manner. For the purpose of the present case study,
+we also aim at a form of variable selection but with a somewhat different focus.
+As most CWP measures show small to medium correlations with at least a few other
+CWP measures, we expect only few of them to have a considerable non-zero effect
+on subjective physical health after controlling for all other measures. For
+simplicity, we are not including 'environmental factor' variables into our
+analysis as they were measured on a different scale (from $-4$ 'complete barrier
+to $4$ 'complete facilitator') as all the other variables (from $0$ 'no problem'
+to $4$ 'complete problem').
 
-This leaves us with a total of $51$ predictors, which is still quite a
-lot to estimate for a data set containing $420$ observations, in
-particular because of rather high inter-correlations of predictors. For
-this reason, we impose some regularization on the the size parameters
-$b$ by applying the *regularized horseshoe* prior [@carvalho2009;
-@piironen2016; @piironen2017]. This prior has very fat tails and an
-infinite spike at zero which results in close-to-zero coefficients to
-be shrunken to zero, while greater coefficients located in the tails
-of the prior remain largely unchanged. Thus, the horseshoe prior can
-be used to guide variable selection [@piironen2017]. There are a lot
-of options to tune the horseshoe prior, but for the purpose of the
-present case study, we will only use the `par_ratio` argument. With
-this argument, we can formalize our prior expectation about the number
-of non-zero effects, which we will set to $10\%$, that is roughly $5$
-of the total $51$ predictors. The smaller `par_ratio`, the stronger
-the shrinkage towards zero. In brms, we can specify this prior as
-follows:
+This leaves us with a total of $51$ predictors, which is still quite a lot to
+estimate for a data set containing $420$ observations, in particular because of
+rather high inter-correlations of predictors. For this reason, we impose some
+regularization on the the size parameters $b$ by applying the *regularized
+horseshoe* prior [@carvalho2009;
+@piironen2016; @piironen2017]. This prior has very fat tails and an infinite
+spike at zero which results in close-to-zero coefficients to be shrunken to
+zero, while greater coefficients located in the tails of the prior remain
+largely unchanged. Thus, the horseshoe prior can be used to guide variable
+selection [@piironen2017]. There are a lot of options to tune the horseshoe
+prior, but for the purpose of the present case study, we will only use the
+`par_ratio` argument. With this argument, we can formalize our prior expectation
+about the number of non-zero effects, which we will set to $10\%$, that is
+roughly $5$ of the total $51$ predictors. The smaller `par_ratio`, the stronger
+the shrinkage towards zero. In brms, we can specify this prior as follows:
 
 ```{r, echo=TRUE}
 prior3 <- prior(horseshoe(par_ratio = 0.1), class = "b")
@@ -907,49 +763,41 @@ prior3 <- prior(horseshoe(par_ratio = 0.1), class = "b")
 cwp <- rbind(cwp, c(rep(4, 51), phcs = NA))
 ```
 
-Before we actually fit the model, we add an artificial row to our data
-set which contains the maximal value (`4`) for each of the predictor
-variables and a missing value (`NA`) for the subjective physical
-health measure `phcs`. This ensures that all size parameters are on
-the same scale even if the maximal category was not actually present
-in the data set, as we had seen above for impairments in walking. The
-model including 51 CWP measures as monotonic predictors is then set up
-via
+Before we actually fit the model, we add an artificial row to our data set which
+contains the maximal value (`4`) for each of the predictor variables and a
+missing value (`NA`) for the subjective physical health measure `phcs`. This
+ensures that all size parameters are on the same scale even if the maximal
+category was not actually present in the data set, as we had seen above for
+impairments in walking. The model including 51 CWP measures as monotonic
+predictors is then set up via
 
 ```{r fit3, results="hide"}
 pred <- setdiff(names(cwp), "phcs")
 formula3 <- paste0("phcs | mi() ~ ", paste0("mo(", pred, ")", collapse = "+"))
 formula3 <- as.formula(formula3)
-if (file.exists("fit3.Rds")) {
-  fit3 <- readRDS("fit3.Rds")
-} else {
-  fit3 <- brm(formula3, data = cwp, prior = prior3)
-}
+fit3 <- brm(formula3, data = cwp, prior = prior3, file = "fit3") 
 ```
 
 ```{r, eval=FALSE, echo=TRUE}
 fit3 <- brm(phcs | mi() ~ ..., data = cwp, prior = prior3)
 ```
 
-The `mi()` term on the left-hand side of the formula ensures that the
-newly added row with a missing value in `phcs` is actually included in
-the model, as otherwise it would just have been removed during the
-data preparation step. The right-hand side abbreviated above as `....`
-actually contains separate `mo()` terms for the 51 included CWP
-measures, which we did not write out due to the length of that
-expression.
+The `mi()` term on the left-hand side of the formula ensures that the newly
+added row with a missing value in `phcs` is actually included in the model, as
+otherwise it would just have been removed during the data preparation step. The
+right-hand side abbreviated above as `....` actually contains separate `mo()`
+terms for the 51 included CWP measures, which we did not write out due to the
+length of that expression.
 
-As illustrated in Figure \ref{fig:int3}, only few predictors have an
-effect that deviates from zero in a relevant manner after applying
-regularization of the horseshoe prior. Most notably, these are
-impairments in 'walking' (`d450`) and 'moving around (`d455`), but
-also in 'community life' (`d910`) and 'sensation of pain' (`b280`),
-which all seem to have a negative effect on subjective physical health
-after controlling for all other predictors. This does not necessarily
-imply that other predictors have no additional predictive value. To
-better better understand the latter, different variable selection
-techniques -- for instance those explained in @gertheiss2011CWP -- may
-be favorable.
+As illustrated in Figure \ref{fig:int3}, only few predictors have an effect that
+deviates from zero in a relevant manner after applying regularization of the
+horseshoe prior. Most notably, these are impairments in 'walking' (`d450`) and
+'moving around (`d455`), but also in 'community life' (`d910`) and 'sensation of
+pain' (`b280`), which all seem to have a negative effect on subjective physical
+health after controlling for all other predictors. This does not necessarily
+imply that other predictors have no additional predictive value. To better
+better understand the latter, different variable selection techniques -- for
+instance those explained in @gertheiss2011CWP -- may be favorable.
 
 ```{r int3, fig.cap = "Size parameters of 51 CWP measures as estimated by model `fit3`. See @gertheiss2011CWP for details on the variable names.", fig.height=8.5}
 ps_bsp <- posterior_samples(fit3, pars = "^bsp_")
@@ -960,21 +808,18 @@ bayesplot::mcmc_intervals(ps_bsp, prob_outer = 0.95)
 ```
 
 ```{r fit4, results="hide"}
-if (file.exists("fit4.Rds")) {
-  fit4 <- readRDS("fit4.Rds")
-} else {
-  fit4 <- brm(phcs | mi() ~ ., data = cwp, prior = prior3)
-}
+fit4 <- brm(phcs | mi() ~ ., data = cwp, prior = prior3, file = "fit4") 
 ```
 
 ```{r}
 nd <- cwp[-nrow(cwp), ] 
-w34 <- model_weights(fit3, fit4, weights = "waic", newdata = nd)
+w34 <- model_weights(fit3, fit4, weights = "loo2", newdata = nd) 
 ```
 
 Similar to what we did before, we can compare fit of the monotonic
 model to a corresponding linear model on which we apply the horseshoe
-prior as well. Performing model comparison by means of the WAIC yields
+prior as well. Performing model comparison by means of the stacking
+of posterior-predictive distributions [@yao2017] yields
 a weight of `r round(w34[1], 2) * 100`% for the monotonic model, which
 thus seems to perform better than its linear counterpart even though
 most of the predictors actually have an effect very close to zero (see
@@ -989,10 +834,7 @@ $\bm{\zeta}$ do not influence predictions as long as $b$ is small. In
 other words, a monotonic predictor with a close to zero effect
 naturally reduces to a simple linear predictor.
 
-\ECNote{Should we try to compare with a recoding of the predictors as
-\texttt{ordered factor}s and ordinary regression ?}
-
-# Conclusion
+# Discussion
 
 In the present paper, we introduced a principled approach to including
 ordinal predictors in regression models, which we called *monotonic
@@ -1006,17 +848,19 @@ together with multilevel structures. They are fully supported in the
 brms R package, which fits Bayesian regression models using Stan and
 provides an intuitive user interface based on widely known R formula
 syntax. To date, ordinal predictors are still mostly treated as either
-nominal or metric thus under- or
-over~~estimating~~\textcolor{blue}{stating} the contained
+nominal or metric thus under- or overstating the contained
 information. Monotonic effects avoid these problems but still allow
 for an intuitive interpretation of the estimated parameters. In
 summary, we hope that monotonic effects can solve some longstanding
 problems in the treatment of ordinal predictors.
 
-\textcolor{blue}{As illustrated in the case of interactions of a
-monotonic and a numeric parameter, the use of monotonic predictors
-introduce new subtleties in the parameterization of a model, which may
-highlight structural information.}
+As illustrated in the case of interactions of monotonic and categorical 
+predictors, the use of monotonic predictors introduce some subtleties in the
+parameterization of a model, which may highlight structural information.
+For instance, one may choose to model the effect of the monotonic predictor
+to be monotonic for each category, or rather choose *differences* between 
+categeories to be monotonic. Both options may be reasonable depending on the 
+research question and a-priori information available.
 
 Monotonic effects have been implemented in brms for about two years at
 the time of writing this paper, which allowed us (and users of brms)
@@ -1049,8 +893,15 @@ be inappropriate in many cases. For these reasons, we chose not to
 investigate the frequentist properties of monotonic effects any
 further in the present paper.
 
-\ECNote{If we discuss the \texttt{ordered factor}/polynomial
-regression approach, we should discuss the differences here\dots}
+We want to take this opportunity to briefly discusss the default approach to
+ordinal predictors (coded as ordered factors) in R, which is to compute
+orthogonal polynomials on their integer representations to model linear,
+qudratic, cubic, etc. terms of the predictors [@chambers1992]. We believe this
+approach to be suboptimal for various reasons. First, it assumes the levels of
+the ordinal variable to be equidistant, which is clearly an oversimplication.
+Second, it does not ensure monotonicty. Third, resulting parameter estimates may
+be hard to interprete and fourth, penalizing complexity is much less
+straightforward than for, say, monotonic effects.
 
 Although our primary focus was the use of monotonic effects for
 modeling strictly ordinal predictors, we want to point out that
@@ -1070,6 +921,16 @@ course, time may also be modeled as continuous, but for very few time
 points, using a monotonic effect may be a more reliable solution
 without strong assumptions outside of monotonicity.
 
+Although we focused on the discrte case in the present paper, the idea of
+monotonic effects also generalizes to continuous data. In this case, the sum in
+the definition of monotonic effects becomes an integral and $\zeta$ a
+non-negative function to be integrated over. A similar idea is used in I-splines
+(i.e., intergral splines) whose basis functions represent integrals over the
+non-negative basis functions of another spline [@ramsay1988]. In future
+research, it may thus be worthwhile to study continuous versions of monotonic effects
+and to relate them to existing methods [e.g., @ramsay1988; @pya2015] that ensure
+monotonicty in the continuous case.
+
 \newpage
 
 # References {-}
@@ -1083,12 +944,13 @@ without strong assumptions outside of monotonicity.
 ## Appendix A: Mathematical Proofs {-}
 
 \begin{proof} 
-\emph{(Monotonicity)} For all values $x$ between $0$ and $C-1$, we have
+\emph{(Monotonicity)} For all values $x$ between $0$ and $D-1$, we have
 \begin{equation}
 \eta(x + 1) - \eta(x) = b \sum_{i = 1}^{x+1} \zeta_i - b \sum_{i =
 1}^{x} \zeta_i = b \zeta_{x+1}.
 \end{equation}
-Since $\zeta_{x+1} > 0$, the linear predictor $\eta(x)$ is monotonically increasing if $b \geq 0$ and monotonically decreasing if $b \leq 0$.
+Since $\zeta_{x+1} > 0$, the linear predictor $\eta(x)$ is monotonically 
+increasing if $b \geq 0$ and monotonically decreasing if $b \leq 0$.
 \end{proof}
 
 
@@ -1096,7 +958,7 @@ Since $\zeta_{x+1} > 0$, the linear predictor $\eta(x)$ is monotonically increas
 \emph{(Equivalence to categorical isotonic regression)} Consider a
 simple linear model of a continuous response $y$ regressed on a
 categorical predictor $x$ with categories $j \in \{0, ...,
-C\}$. Further, let $\mu_j$ be the group mean of category $j$ with
+D\}$. Further, let $\mu_j$ be the group mean of category $j$ with
 respect to the response variable. Then the model for observation $n$
 can be written as
 
