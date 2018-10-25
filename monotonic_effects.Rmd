@@ -33,7 +33,8 @@ abstract: |
   monotonic effects in a fully Bayesian framework is straightforward with the R
   package brms, which also allows to incorporate prior information and to check
   the assumption of monotonicity.
-keywords: Regression, Isotonic, Ordinal variables, Bayesian statistics, brms, Stan, R
+keywords: Isotonic regression, Ordinal variables, Bayesian statistics, brms, 
+  Stan, R
 lang: english
 class: doc
 lineno: yes
@@ -113,11 +114,17 @@ available to fit ordinal models, among others 'ordinal' [@ordinal], 'VGAM'
 [@vgam], or 'brms' [@brms1;@brms2] to name the perhaps most general ones.
 
 Ordinal *predictors* seem to have received less attention in statistical
-research. There are only two lines of research known to the authors of the
-present paper. One is a penalized regression approach specifically designed for
-ordinal predictors [@gertheiss2009; @gertheiss2011; @gertheiss2014] and the
-other are categorical types of isotonic regression [@barlow1972;
-@robertson1988].
+research. In R, for instance, the standard treatment of ordinal predictors is
+still to compute orthogonal polynomials on their integer representations to
+model linear, qudratic, cubic, etc. terms of the predictors [@chambers1992]. We
+believe this approach to be suboptimal for various reasons, most notably because
+it assumes the ordinal categories to be equidistant, which is clearly an
+oversimplication, and because it yields parameter estimates that are hard to
+interprete. Apart from that, there are only two lines of research known to the
+authors of the present paper. One is a penalized regression approach
+specifically designed for ordinal predictors [@gertheiss2009; @gertheiss2011;
+@gertheiss2014] and the other are categorical types of isotonic regression
+[@barlow1972; @robertson1988].
 
 We begin by explaining the former approach. The main idea of the method proposed by
 @gertheiss2009 is to penalize large differences between adjacent categories.
@@ -156,12 +163,13 @@ The idea and scope of the two approaches discussed above is somewhat different.
 While isotonic regression only restricts the *direction* of the changes, the
 penalized regression method restricts the *size* of the changes leaving the
 direction untouched [although we may also introduce order constraints in the
-latter according to
-@gertheiss2011]. None of these two approaches is more reasonable _per se_ and we
-should not necessarily think of them as competing in how ordinal predictors
-should ideally be modeled. Rather, they make use of different sets of
-assumptions which both reflect important aspects of ordinal variables. As we
-will see later on, we may even combine them naturally within the same framework.
+latter according to @gertheiss2011]. None of these two approaches is more
+reasonable _per se_ and we should not necessarily think of them as competing in
+how ordinal predictors should ideally be modeled. Rather, they make use of
+different sets of assumptions which both reflect important aspects of ordinal
+variables. As we will see later on, we may even combine both aspects 
+(i.e., restricting the direction and penalizing the size of changes) naturally 
+within the same framework.
 
 [^mono]: The term 'isotonic' is mostly used synonymously to 'monotonic' in the
 mathematical-statistical literature. We prefer the latter as we believe it to be
@@ -829,106 +837,73 @@ effect naturally reduces to the complexity of a simple linear predictor.
 
 # Discussion
 
-In the present paper, we introduced a principled approach to including
-ordinal predictors in regression models, which we called *monotonic
-effects*. In simple cases, they coincide with estimates provided by
-isotonic regression while allowing to penalize larger changes between
-adjacent categories via prior distributions. Thus, monotonic effects
-naturally combine important ideas of existing methods for modeling
-ordinal predictors. Moreover, monotonic effects nicely integrate into
-the framework of generalized linear regression and can even be used
-together with multilevel structures. They are fully supported in the
-brms R package, which fits Bayesian regression models using Stan and
-provides an intuitive user interface based on widely known R formula
-syntax. To date, ordinal predictors are still mostly treated as either
-nominal or metric thus under- or overstating the contained
-information. Monotonic effects avoid these problems but still allow
-for an intuitive interpretation of the estimated parameters. In
-summary, we hope that monotonic effects can solve some longstanding
-problems in the treatment of ordinal predictors.
+In the present paper, we introduced a principled approach to including ordinal
+predictors in regression models, which we called *monotonic effects*. In simple
+cases, they coincide with estimates provided by isotonic regression while
+allowing to penalize larger changes between adjacent categories via prior
+distributions. Thus, monotonic effects naturally combine important ideas of
+existing methods for modeling ordinal predictors. Moreover, monotonic effects
+nicely integrate into the framework of generalized linear regression and can
+even be used in combination with multilevel structure. By making an informed
+decision about the parameterization of interactions with monotonic effects,
+different kinds of monotonicity can be modeled depending on the research
+question and a-priori information available. Monotonic effects are fully
+supported in the brms R package, which fits Bayesian regression models using
+Stan and provides an intuitive user interface based on widely known R formula
+syntax. To date, ordinal predictors are still mostly treated as either nominal
+or metric thus under- or overstating the contained information. Monotonic
+effects avoid these problems but still allow for an intuitive interpretation of
+the estimated parameters. In summary, we hope that monotonic effects can solve
+some longstanding problems in the treatment of ordinal predictors.
 
-As illustrated in the case of interactions of monotonic and categorical 
-predictors, the use of monotonic predictors introduce some subtleties in the
-parameterization of a model, which may highlight structural information.
-For instance, one may choose to model the effect of the monotonic predictor
-to be monotonic for each category, or rather choose *differences* between 
-categeories to be monotonic. Both options may be reasonable depending on the 
-research question and a-priori information available.
+Although our primary focus was the use of monotonic effects for modeling
+strictly ordinal predictors, we want to point out that they may be
+applied to other kinds of discrete variables, as well. Such variables may
+represent, for instance, count data or discrete points in time. As an example
+for the former, we can think of participants solving a sequence of figural
+analogy tasks with the value of interest being the number of tasks solved
+correctly. This count variable could then be used as predictor of a general
+intelligence score. It is plausible to assume the number of correctly solved
+items to be monotonically related to general intelligence and so the
+applications of a monotonic effect appears reasonable. As an example for the
+latter, we could think of a longitudinal study with few measurement points. If
+the outcome was a skill gradually acquired over time, we would expect time to be
+monotonically related to it. Of course, time may also be modeled as continuous,
+but for very few time points, using a monotonic effect may be a more reliable
+solution without strong assumptions outside of monotonicity.
 
-Monotonic effects have been implemented in brms for about two years at
-the time of writing this paper, which allowed us (and users of brms)
-to gather a reasonable amount of experience with their behavior. From
-what we have seen in our own data sets and what users reported,
-sampling efficiency and convergence were good and rarely much worse
-that when using a purely categorical or linear approach. This is
-notable insofar, as elements of a simplex tend to be negatively
-correlated, sometimes rather strongly, thus making MCMC sampling more
-difficult. The fact that this has not been a major issue -- at least
-from our experience -- may be largely due the advanced Hamiltonian
-Monte-Carlo samplers implemented in Stan, which are designed to work
-well even for highly inter-correlated posteriors [@hoffman2014;
-@betancourt2014].
+One potential problem in the Bayesian estimation of monotonic effects is that
+elements of a simplex tend to be negatively correlated, sometimes rather
+strongly, thus making MCMC sampling more difficult [@hoffman2014]. However, due
+to the advanced Hamiltonian Monte-Carlo samplers implemented in Stan, which are
+designed to work well even for highly inter-correlated posteriors [@hoffman2014;
+@betancourt2014], these problems may be alleviated when fitting monotonic
+effects in Stan -- either directly or indirectly through brms. Indeed, in the
+models estimated for the purpose of this paper and more generally in the last
+two years since implementing monotonic effects in brms, sampling efficiency and
+convergence were good and rarely worse that when using a purely categorical or
+linear approach. Still, we cannot rule out that in some edge cases or very
+complex models, convergence problems may occur due to the chosen
+parameterization of monotonic effects.
 
-For simple cases such as regression models with only a single
-monotonic effect and normally distributed errors, maximum likelihood
-estimators can be developed as well [@barlow1972;
-@robertson1988]. However, we believe them to be of limited practical
-applicability since the supported models were necessarily of far less
-complexity as compared to what can be fitted right away in a fully
-Bayesian framework. Moreover, computing uncertainty estimates for
-simplex parameters in a frequentist framework is not straightforward,
-as for finite data, the distribution of their estimators are not
-necessarily sufficiently normal. This is true in particular for
-elements of the simplex that come close to the naturally lower or
-upper boundaries ($0$ or $1$) of the simplex. Thus, a confidence
-interval constructed based on approximate standard errors may
-be inappropriate in many cases[^CI]. For these reasons, we chose not to
-investigate frequentist methods for estimating monotonic effects any
-further in the present paper.
+For simple cases such as regression models with only a single monotonic effect
+and normally distributed errors, maximum likelihood estimators can be developed
+as well [@barlow1972; @robertson1988]. As we prefer a fully Bayesian approach to
+statistical modeling, we did not dive deeper into this direction. However, we
+still believe that developing frequentist estimators and corresponding
+uncertainty estimates for more complex monotonic models including, for instance,
+interactions or multilevel structure, may be a worthwhile endeavor for future
+research.
 
-[^CI]: This is not to say that one couldn't possibly create valid
-confidence intervals for simplexes; just that it would likely require some sort
-of approximation, which may or may not be appropriate depending on the data and
-model. From our Bayesian point of view, such methods, even if approximately
-valid, would still be inferior to inference obtained from the posterior.
-
-We want to take this opportunity to briefly discusss the default approach to
-ordinal predictors (coded as ordered factors) in R, which is to compute
-orthogonal polynomials on their integer representations to model linear,
-qudratic, cubic, etc. terms of the predictors [@chambers1992]. We believe this
-approach to be suboptimal for various reasons. First, it assumes the levels of
-the ordinal variable to be equidistant, which is clearly an oversimplication.
-Second, it does not ensure monotonicty. Third, resulting parameter estimates may
-be hard to interprete and fourth, penalizing complexity is much less
-straightforward than for, say, monotonic effects.
-
-Although our primary focus was the use of monotonic effects for
-modeling strictly ordinal predictors, we want to point out that
-monotonic effects may be applied to other kinds of discrete variables,
-as well. Such variables may represent, for instance, count data or
-discrete points in time. As an example for the former, we can think of
-participants solving a sequence of figural analogy tasks with the
-value of interest being the number of tasks solved correctly. This
-count variable could then be used as predictor of a general
-intelligence score. It is plausible to assume the number of correctly
-solved items to be monotonically related to general intelligence and
-so the applications of a monotonic effect appears reasonable. As an
-example for the latter, we could think of a longitudinal study with
-few measurement points. If the outcome was a skill gradually acquired
-over time, we would expect time to be monotonically related to it. Of
-course, time may also be modeled as continuous, but for very few time
-points, using a monotonic effect may be a more reliable solution
-without strong assumptions outside of monotonicity.
-
-Although we focused on the discrte case in the present paper, the idea of
+Although we focused on the modeling of discrete variables, the general idea of
 monotonic effects also generalizes to continuous data. In this case, the sum in
 the definition of monotonic effects becomes an integral and $\zeta$ a
 non-negative function to be integrated over. A similar idea is used in I-splines
 (i.e., intergral splines) whose basis functions represent integrals over the
 non-negative basis functions of another spline [@ramsay1988]. In future
-research, it may thus be worthwhile to study continuous versions of monotonic effects
-and to relate them to existing methods [e.g., @ramsay1988; @pya2015] that ensure
-monotonicty in the continuous case.
+research, it may thus be worthwhile to study continuous versions of monotonic
+effects and to relate them to existing methods [e.g., @ramsay1988; @pya2015]
+that ensure monotonicty in the continuous case.
 
 \newpage
 
