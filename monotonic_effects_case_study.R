@@ -25,27 +25,26 @@ marginal_effects(fit2)
 # compare models using stacking
 model_weights(fit1, fit2, weights = "loo2")
 
-# prepare data for the fully models
+# prepare data for the full models with all predictors
 cwp_NA <- rbind(cwp, c(rep(4, 51), phcs = NA))
 
-# prior for the full models
+# shrinkage priors for the full models
 prior3 <- prior(horseshoe(par_ratio = 0.1), class = "b")
 
-# fit the third model
-# takes some time
+# fit the full monotonic model which may take some time
 pred <- setdiff(names(cwp_NA), "phcs")
 formula3 <- paste0("phcs | mi() ~ ", paste0("mo(", pred, ")", collapse = "+"))
 formula3 <- as.formula(formula3)
 fit3 <- brm(formula3, data = cwp_NA, prior = prior3) 
 
-# plot size parameters
+# plot monotonic size parameters
 ps_bsp <- posterior_samples(fit3, pars = "^bsp_")
 names(ps_bsp) <- sub("^bsp_mo", "", names(ps_bsp))
 medians_bsp <- apply(ps_bsp, 2, median)
 ps_bsp <- ps_bsp[, order(medians_bsp)]
 bayesplot::mcmc_intervals(ps_bsp, prob_outer = 0.95)  
 
-# fit the full model of linear effects
+# fit the full model with linear effects
 fit4 <- brm(phcs | mi() ~ ., data = cwp_NA, prior = prior3)
 summary(fit4)
 
