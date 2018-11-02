@@ -15,24 +15,24 @@ affiliation:
   - id: 2
     institution: Assistance publique - Hôpitaux de Paris, France
 abstract: |
-  Ordinal predictors are commonly used in regression models. However, they are often
-  incorrectly treated as either nominal or metric thus under- or overestimating
-  the contained information. This is understandable insofar as generally
-  applicable solutions or corresponding statistical software are still
+  Ordinal predictors are commonly used in regression models. However, they are
+  often incorrectly treated as either nominal or metric thus under- or
+  overestimating the contained information. This is understandable insofar as
+  generally applicable solutions or corresponding statistical software are still
   underdeveloped. We propose a new way of parameterizing regression coefficients
   of ordinal predictors, which we call monotonic effects. The reparameterization
-  is done in terms of a scale parameter $b$ representing the direction and
-  size of the effect and a simplex parameter $\bm{\zeta}$ modeling the
-  normalized differences between categories. This ensures that predictions
-  increase or decrease monotonically, while changes between adjacent
-  categories may vary across categories. This formulation generalizes to
-  interaction terms as well as multilevel structures. Monotonic effects may
-  not only be applied to ordinal predictors, but also to other discrete
-  variables for which a monotonic relationship is plausible. This includes
-  variables representing count data or discrete points in time. Fitting
-  monotonic effects in a fully Bayesian framework is straightforward with the R
-  package brms, which also allows to incorporate prior information and to check
-  the assumption of monotonicity.
+  is done in terms of a scale parameter $b$ representing the direction and size
+  of the effect and a simplex parameter $\bm{\zeta}$ modeling the normalized
+  differences between categories. This ensures that predictions increase or
+  decrease monotonically, while changes between adjacent categories may vary
+  across categories. This formulation generalizes to interaction terms as well
+  as multilevel structures. Monotonic effects may not only be applied to ordinal
+  predictors, but also to other discrete variables for which a monotonic
+  relationship is plausible. Using Stan, we developed a Bayesian estimation
+  method for monotonic effects, which also allows to incorporate prior
+  information and to check the assumption of monotonicity. We have implemented
+  this method in the R package brms, so that fitting monotonic effects in a
+  fully Bayesian framework is now straightforward.
 keywords: Isotonic regression, Ordinal variables, Bayesian statistics, brms, 
   Stan, R
 lang: english
@@ -100,18 +100,19 @@ options(knitr.kable.NA = '')
 # how to use papaja ? https://crsh.github.io/papaja_man/introduction.html
 ```
 
-Over the last few decades, much statistical research has been devoted to
-handling ordinal response variables in regression models starting with the
-seminal paper of @mccullagh1980 [see also @agresti2010;@buerkner2018ordinal;
-@liu2005; @tutz2011 for an overview]. In Psychology, for instance, this kind of
-data is omnipresent in the form of Likert scale items, which are often treated
-as continuous out of convenience without ever testing this assumption
-[@LiddellAnalyzingordinaldata2017]. With researchers realizing the importance of
-correctly modeling ordinal responses, the related models -- often simply called
-*ordinal models* -- are now increasingly applied in scientific practice. In the
-statistical language R [@r_core_team], for instance, several packages are
-available to fit ordinal models, among others 'ordinal' [@ordinal], 'VGAM'
-[@vgam], or 'brms' [@brms1;@brms2] to name the perhaps most general ones.
+Over the last few decades, a substantial amount of statistical research has been
+devoted to handling ordinal response variables in regression models starting
+with the seminal paper of @mccullagh1980 [see also @agresti2010;
+@buerkner2018ordinal; @liu2005; @tutz2011 for an overview]. In Psychology, for
+instance, this kind of data is omnipresent in the form of Likert scale items,
+which are often treated as continuous out of convenience without ever testing
+this assumption [@LiddellAnalyzingordinaldata2017]. With researchers realizing
+the importance of correctly modeling ordinal responses, the related models --
+often simply called *ordinal models* -- are now increasingly applied in
+scientific practice. In the statistical language R [@r_core_team], for instance,
+several packages are available to fit ordinal models, among others 'ordinal'
+[@ordinal], 'VGAM' [@vgam], or 'brms' [@brms1;@brms2] to name the perhaps most
+general ones.
 
 Ordinal *predictors* seem to have received less attention in statistical
 research. In R, for instance, the standard treatment of ordinal predictors is
@@ -838,7 +839,7 @@ effect naturally reduces to the complexity of a simple linear predictor.
 # Discussion
 
 In the present paper, we introduced a principled approach to including ordinal
-predictors in regression models, which we called *monotonic effects*. In simple
+predictors in regression models, which we call *monotonic effects*. In simple
 cases, they coincide with estimates provided by isotonic regression while
 allowing to penalize larger changes between adjacent categories via prior
 distributions. Thus, monotonic effects naturally combine important ideas of
