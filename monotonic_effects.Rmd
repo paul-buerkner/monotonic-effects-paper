@@ -197,19 +197,22 @@ effects are presented in the Appendix.
 # Monotonic Effects
 
 A predictor which we want to model as monotonic must have discrete values in an
-ordered set, which are coded as integers. The integer value may represent, for instance,
-count data, discrete points in time, or categories of an ordinal variable. Since
-the latter is possibly the most relevant use case in psychology and related
-disciplines, in the following, we are going to concentrate on this example of an application for a monotonic predictor. We are going to refer to the values of such a variable as predictor categories. As opposed to a continuous predictor, predictor
-categories are not assumed to be equidistant with respect to their effect on the
-response variable. Instead, the distance between adjacent predictor categories
-is estimated from the data and may vary across categories. This is realized by
-parameterizing as follows: One parameter, $b$, represents the direction and
-size of the effect similar to an ordinary regression parameter, while an
-additional parameter vector, $\bm{\zeta}$, estimates the normalized distances
-between consecutive predictor categories. For a single monotonic predictor,
-$\bm{x}$, with a lowest possible value of zero[^IO], the corresponding predictor
-term $\eta_n$ of observation $n$ looks as follows:
+ordered set, which are coded as integers. The integer value may represent, for
+instance, count data, discrete points in time, or categories of an ordinal
+variable. Since the latter is possibly the most relevant use case in psychology
+and related disciplines, in the following, we are going to concentrate on this
+example of an application for a monotonic predictor. We are going to refer to
+the values of such a variable as predictor categories. As opposed to a
+continuous predictor, predictor categories are not assumed to be equidistant
+with respect to their effect on the response variable. Instead, the distance
+between adjacent predictor categories is estimated from the data and may vary
+across categories. This is realized by parameterizing as follows: One parameter,
+$b$, represents the direction and size of the effect similar to an ordinary
+regression parameter, while an additional parameter vector, $\bm{\zeta}$,
+estimates the normalized distances between consecutive predictor categories. For
+a single monotonic predictor, $\bm{x}$, with a lowest possible value of
+zero[^IO], the corresponding predictor term $\eta_n$ of observation $n$ looks as
+follows:
 
 \begin{equation}
 \eta_n = b \, \sum_{i = 1}^{x_n} \zeta_i
@@ -493,21 +496,6 @@ pl2 <-  data.frame(x, y = dbeta(x, 3, 15)) %>%
 pl1 + pl2
 ```
 
-<!--
-\ECNote{
-Here, we should discuss \textsf{R}'s \texttt{ordered factor}
-type and its use by mainstream regression packages (\texttt{lm},
-\texttt{glm}, \texttt{(g)lmer} and the like\dots), which treat them as
-(equally-spaced) numeric points and proceed to a polynomial regression
-with Chebychev polynomials, thus giving estimates and SDs for a
-linear, quadratic, cubic, etc\dots terms.
-
-Our approach is fundamentally different (and, I think, better). We
-should at least show an example (a simple linear regression ?)
-comparing the two approaches\dots
-}
--->
-
 # Implementation in brms
 
 The brms package [@brms1; @brms2] provides an interface to fit
@@ -607,7 +595,8 @@ available in the R package "ordPens" [@ordPens] and is explained in
 detail in @gertheiss2011CWP and @cieza2004. In the data set, the
 variable of subjective physical health is called `phcs` while the CWP
 measures are named according to their official ICF coding [see
-@gertheiss2011CWP for explanation].
+@gertheiss2011CWP for explanation]. Our fully reproducible analysis
+is available on OSF (https://osf.io/kvrsg/).
 
 In our first model, we will predict the subjective physical health
 (variable `phcs`) only by the impairments in 'walking' (variable
