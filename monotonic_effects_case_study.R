@@ -7,7 +7,7 @@ cwp <- ICFCoreSetCWP %>%
   select(-starts_with("e"))
 
 # specify priors
-prior1 <- prior(normal(0, 10), class = "b") +
+prior1 <- prior(normal(0, 2.5), class = "b") +
   prior(dirichlet(1, 1, 1), class = "simo", coef = "mod4501") +
   prior(dirichlet(1, 1, 1, 1), class = "simo", coef = "mod4551")
 

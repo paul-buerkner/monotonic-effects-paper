@@ -41,3 +41,5 @@ Archiv/
 monotonic_effects_files/
 monotonic_effects.tex
 correspondence/
+frequentist_estimators/
+*.log

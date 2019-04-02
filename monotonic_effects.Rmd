@@ -210,12 +210,12 @@ across categories. This is realized by parameterizing as follows: One parameter,
 $b$, represents the direction and size of the effect similar to an ordinary
 regression parameter, while an additional parameter vector, $\bm{\zeta}$,
 estimates the normalized distances between consecutive predictor categories. For
-a single monotonic predictor, $\bm{x}$, with a lowest possible value of
-zero[^IO], the corresponding predictor term $\eta_n$ of observation $n$ looks as
-follows:
+a single monotonic predictor variable, $\bm{x}$, with $x_n \in \{0, \ldots, D\}$ 
+(i.e., with a lowest possible value of zero[^IO]), the corresponding predictor
+term $\eta_n$ of observation $n$ looks as follows:
 
 \begin{equation}
-\eta_n = b \, \sum_{i = 1}^{x_n} \zeta_i
+\eta_n = b \, D \, \sum_{i = 1}^{x_n} \zeta_i
 \end{equation}
 
 For notational convenience, we define $\sum_{i = 1}^{0} \zeta_i = 0$. The
@@ -225,13 +225,19 @@ with $D$ being the highest possible integer value that $\bm{x}$ can take on.
 Since we start counting at zero, $D$ is equal to the number of differences
 between two adjacent categories and also equal to the total number of 
 categories minus one. If the monotonic effect is used in a linear
-model, $b$ can be interpreted as the expected difference between the highest and
-the lowest category of $\bm{x}$, while $\zeta_i$ describes the expected
+model, $b$ can be interpreted as the expected average difference between two
+adjacent categories of $\bm{x}$, while $\zeta_i$ describes the expected
 difference between the categories $i$ and $i - 1$ in the form of a proportion of
-the overall difference $b$. Thus, this parameterization has an intuitive
+the overall difference between lowest and highest categors. 
+Thus, this parameterization has an intuitive
 interpretation while guaranteeing the monotonicity of the effect (see Appendix A
-for a formal proof). For notational convenience we define $\mo(x, \bm{\zeta}) =
-\sum_{i = 1}^{x} \zeta_i$ and call $\mo()$ the *monotonic transform*. As
+for a formal proof). For notational convenience we define 
+
+\begin{equation}
+\mo(x, \bm{\zeta}) = D \, \sum_{i = 1}^{x} \zeta_i
+\end{equation}
+
+and call $\mo()$ the *monotonic transform*. As
 visualized in Figure \@ref(fig:moplot), we can understand monotonic effects as
 implying a piecewise linear curve of which all components have the same sign. In
 a simple linear model, monotonic effects are equivalent to categorical isotonic
@@ -242,7 +248,7 @@ statistical software, where indices of vectors, matrices, etc. usually start at
 one. However, starting at zero simplifies the notation of monotonic effects and so we
 adopt this approach in the present paper.
 
-```{r moplot, fig.cap="Visualization of a monotonic effect with four categories. Parameters were set to $b = 100$ and $\\bm{\\zeta} = (0.6, 0.3, 0.1)$."}
+```{r moplot, fig.cap="Visualization of a monotonic effect with four categories. Parameters were set to $b = 100 / 3$ and $\\bm{\\zeta} = (0.6, 0.3, 0.1)$."}
 dat <- data.frame(x = 0:3, y = c(0, 60, 90, 100))
 arrow_dat <- data.frame(
   x = c(0, 0, 1, 1, 2, 2),
@@ -258,18 +264,18 @@ ggplot(dat, aes(x, y)) +
   ) +
   scale_y_continuous(breaks = seq(0, 100, 10)) +
   annotate(
-    'text', x = 0.1, y = 55, 
-    label = "b",
+    'text', x = 0.2, y = 55, 
+    label = "b~D",
     parse = TRUE, size = 10
   ) +
   annotate(
-    'text', x = 1.3, y = 25, 
-    label = "b~zeta[1]",
+    'text', x = 1.35, y = 25, 
+    label = "b~D~zeta[1]",
     parse = TRUE, size = 10
   ) + 
   annotate(
-    'text', x = 2.3, y = 75, 
-    label = "b~zeta[2]",
+    'text', x = 2.35, y = 75, 
+    label = "b~D~zeta[2]",
     parse = TRUE, size = 10
   )
 ```
@@ -293,7 +299,7 @@ $\bm{x}$ and an arbitrary predictor $\bm{z}$ could be formulated as
 \eta_n = b_1 \, z_n + b_2 \, \mo(x_n, \bm{\zeta}_{xb_2}) +  b_3 \, z_n \, \mo(x_n, \bm{\zeta}_{xb_3}), 
 \end{equation}
 
-where $\bm{\zeta}_{xb_2}$ and $\bm{\zeta}_{xb_3}$ are two independent
+where $\bm{\zeta}_{xb_2}$ and $\bm{\zeta}_{xb_3}$ are two
 simplex parameters. Under this formulation, $\bm{x}$ may not
 necessarily be conditionally monotonic for all values of $\bm{z}$ (see
 Appendix A for a counter example). Rather the monotonicity being
@@ -361,15 +367,14 @@ likelihood contribution, such as expert knowledge or findings from
 previous studies.
 
 Priors for $b$ can be derived based on the _a priori_ expectation
-regarding the differences between highest and lowest category, which
-we call *maximal difference* in the following. Any family of prior
-distributions typically applied to regression coefficients can be
-applied on $b$, as well. As a weakly-informative prior for $b$, we can
+regarding the *average difference* between adjacent categories.
+Any family of prior distributions typically applied to regression coefficients 
+can be applied on $b$, as well. As a weakly-informative prior for $b$, we can
 understand any location shift distribution -- such as a normal of
 student-t distribution -- centered around zero and with a scale
-parameter large enough to allow for large but plausible maximal
-differences, while penalizing implausibly large maximal
-differences. This scale will necessarily depend on the scale of the
+parameter large enough to allow for large but plausible average
+differences, while penalizing implausibly large differences. 
+This scale will necessarily depend on the scale of the
 response distribution and also on the range of the monotonic
 predictor. Alternatively, one may use an improper flat prior that
 treats all real values as being equally likely _a priori_ in the hope
@@ -631,7 +636,7 @@ specify the above priors by means of the following code:
 
 ```{r prior1, echo = TRUE, results="hide"}
 library(brms)
-prior1 <- prior(normal(0, 10), class = "b") +
+prior1 <- prior(normal(0, 2.5), class = "b") +
   prior(dirichlet(1, 1, 1), class = "simo", coef = "mod4501") +
   prior(dirichlet(1, 1, 1, 1), class = "simo", coef = "mod4551")
 ```
@@ -910,19 +915,20 @@ that ensure monotonicty in the continuous case.
 \begin{proof} 
 \emph{(Monotonicity)} For all values $x$ between $0$ and $D-1$, we have
 \begin{equation}
-\eta(x + 1) - \eta(x) = b \sum_{i = 1}^{x+1} \zeta_i - b \sum_{i =
-1}^{x} \zeta_i = b \zeta_{x+1}.
+\eta(x + 1) - \eta(x) = b D \sum_{i = 1}^{x+1} \zeta_i - b D \sum_{i =
+1}^{x} \zeta_i = b D \zeta_{x+1}.
 \end{equation}
-Since $\zeta_{x+1} > 0$, the linear predictor $\eta(x)$ is monotonically 
-increasing if $b \geq 0$ and monotonically decreasing if $b \leq 0$.
+Since $D > 0$ and $\zeta_{x+1} > 0$, the linear predictor $\eta(x)$ is
+monotonically increasing if $b \geq 0$ and monotonically decreasing if 
+$b \leq 0$.
 \end{proof}
 
 
 \begin{proof} 
 \emph{(Equivalence to categorical isotonic regression)} Consider a
 simple linear model of a continuous response $y$ regressed on a
-categorical predictor $x$ with categories $j \in \{0, ...,
-D\}$. Further, let $\mu_j$ be the group mean of category $j$ with
+categorical predictor $x$ with categories $j \in \{0, \ldots, D\}$. 
+Further, let $\mu_j$ be the group mean of category $j$ with
 respect to the response variable. Then the model for observation $n$
 can be written as
 
@@ -936,11 +942,11 @@ order-constraint $\mu_0 \leq \mu_1 \leq ... \leq \mu_C$ or $\mu_0 \geq
 \mu_1 \geq ... \geq \mu_C$. Using a monotonic effect, we write:
 
 \begin{equation}
-y_n = b_0 + b_1 \, \sum_{i = 1}^{x_n} \zeta_i + e_n.
+y_n = b_0 + b_1 \, D \, \sum_{i = 1}^{x_n} \zeta_i + e_n.
 \end{equation}
 
-Hence, we can identify $\mu_0$ with $b_0$ and $\mu_j$ with $b_0 + b_1
-\sum_{i = 1}^{j} \zeta_i$ for $j > 0$. This identification is
+Hence, we can identify $\mu_0$ with $b_0$ and $\mu_j$ with 
+$b_0 + b_1 D \sum_{i = 1}^{j} \zeta_i$ for $j > 0$. This identification is
 bijective within the set of order-constraint $\mu$.  \end{proof}
 
 
@@ -948,12 +954,13 @@ bijective within the set of order-constraint $\mu$.  \end{proof}
 \emph{(Proposition 2.1)} Under the stated assumptions, we can without,
 loss of generality, write the linear predictor $\eta = \eta(x)$ as
 \begin{equation}
-\eta(x) = b_0 + \sum_{i=1}^K b_i \mo(x, \zeta) = b_0 + \left( \sum_{i=1}^K b_i \right) \mo(x, \zeta).
+\eta(x) = b_0 + \sum_{k=1}^K b_k D_k \sum_{i = 1}^x \zeta_i = b_0 + 
+\left( \sum_{k=1}^K b_k D_k \right) \left( \sum_{i = 1}^x \zeta_i \right).
 \end{equation}
 Since all other predictors have been fixed to some constants, their
 contribution to $\eta$ can be absorbed by the intercept $b_0$ and the
 regression coefficients $b_1$ to $b_K$ which are all related to
-$x$. If we define $b_x = \sum_{i=1}^K b_i$ we see that $\eta(x)$ is
+$x$. If we define $b_x = \sum_{i=1}^K b_i D_i$ we see that $\eta(x)$ is
 monotonic in $x$ with the sign of the effect determined by the sign of
 $b_x$.
 \end{proof}
@@ -963,9 +970,9 @@ $b_x$.
 \emph{(Counter example to conditional monotonicity for varying simplex
 parameters)} Consider the situation shown in Figure \ref{fig:cplot},
 where quite clearly, the effect of $\bm{x}$ is monotonic for group
-$a$, but non-monotonic for group $b$. Suppose further that we named
-the grouping variable $\bm{z}$ and applied dummy coding such that $a =
-0$ and $b = 1$. Using different simplex parameters for the main effect
+$G$, but non-monotonic for group $H$. Suppose further that we named
+the grouping variable $\bm{z}$ and applied dummy coding such that $G =
+0$ and $H = 1$. Using different simplex parameters for the main effect
 of $\bm{x}$ and the interaction effects between $\bm{x}$ and $\bm{z}$,
 the linear predictor reads as follows:
 
@@ -973,23 +980,22 @@ the linear predictor reads as follows:
 \eta(x, z) = b_1 \, z + b_2 \, \mo(x, \bm{\zeta}_{xb_2}) +  b_3 \, z \, \mo(x, \bm{\zeta}_{xb_3})
 \end{equation}
 
-For group $a$ this results in $\eta(x, 0) = b_2 \, \mo(x,
-\bm{\zeta}_{xb_2})$ so that $b_2 = 100$ as well as $\bm{\zeta}_{xb_2}
-= (0.8, 0.2)$ are completely defined by the curve of group $a$. For
-group $b$, we have
+For group $G$ this results in $\eta(x, 0) = b_2 \, \mo(x, \bm{\zeta}_{xb_2})$ 
+so that $b_2 = 50$ as well as $\bm{\zeta}_{xb_2} = (0.8, 0.2)$ are completely 
+defined by the curve of group $G$. For group $H$, we have
 
 \begin{equation}
 \eta(x, 1) = b_1 + b_2 \, \mo(x, \bm{\zeta}_{xb_2}) + b_3 \mo(x, \bm{\zeta}_{xb_3}).
 \end{equation}
 
-As the curve of group $b$ starts at the origin, we have $b_1 = 0$. Due
+As the curve of group $H$ starts at the origin, we have $b_1 = 0$. Due
 to the chosen parameterization of $\bm{z}$, the term $b_3 \mo(x,
 \bm{\zeta}_{xb_3})$ models the \emph{difference} between in the effect
 of $\bm{x}$ between the two groups, which visualized as a dashed line
 in Figure \ref{fig:cplot} and is clearly monotonic. Consequently, we
-have $b_3 = 60$ and $\bm{\zeta}_{xb_3} = (\frac{1}{6},
+have $b_3 = 30$ and $\bm{\zeta}_{xb_3} = (\frac{1}{6},
 \frac{5}{6})$. Although the assumptions of the monotonic effects are
-fully met, the effect of $\bm{x}$ in group $b$ is non-monotonic. Thus,
+fully met, the effect of $\bm{x}$ in group $H$ is non-monotonic. Thus,
 $\bm{x}$ is not conditionally monotonic given $\bm{z}$.
 
 \end{proof}
@@ -998,7 +1004,7 @@ $\bm{x}$ is not conditionally monotonic given $\bm{z}$.
 dat <- data.frame(
   x = c(0:2, 0:2), 
   y = c(0, 80, 100, 0, 70, 40),
-  group = rep(c("a", "b"), each = 3)
+  group = rep(c("G", "H"), each = 3)
 )
 dat_diff <- data.frame(
   x = 0:2,
