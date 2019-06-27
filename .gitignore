@@ -43,3 +43,9 @@ monotonic_effects.tex
 correspondence/
 frequentist_estimators/
 *.log
+archive/
+docs/
+models/
+*.aux
+*.out
+

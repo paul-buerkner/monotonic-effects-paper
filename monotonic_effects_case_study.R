@@ -1,52 +1,78 @@
 library(tidyverse)
 library(brms)
 
+# sequential difference coding of factors
+sdif_coding <- function(x) {
+  x <- as.factor(x)
+  contrasts(x) <- MASS::contr.sdif(levels(x))
+  x
+}
+
 # load the data
 data("ICFCoreSetCWP", package = "ordPens")
 cwp <- ICFCoreSetCWP %>%
-  select(-starts_with("e"))
+  select(-starts_with("e")) %>%
+  mutate(
+    # sequential coding for use in categorical models
+    d450c = sdif_coding(d450),
+    d455c = sdif_coding(d455)
+  )
+
+# we will include the following predictors:
+# d450: impairments in walking
+# d455: impairments in moving around
+
+# investigate correlation between the two predictors
+cor(cwp$d450, cwp$d455, method = "kendall")
+
+# we start by analysing the effect of d455 only
 
 # specify priors
-prior1 <- prior(normal(0, 2.5), class = "b") +
+prior_b <- prior(normal(0, 2.5), class = "b")
+prior_s1 <- prior(dirichlet(1, 1, 1, 1), class = "simo", coef = "mod4551")
+
+# fit and summarize the monotonic model
+fit_mo <- brm(phcs ~ mo(d455), data = cwp, prior = prior_b + prior_s1)
+summary(fit_mo)
+marginal_effects(fit_mo)
+
+# fit and summarize the linear model
+fit_lin <- brm(phcs ~ d455, data = cwp, prior = prior_b)
+summary(fit_lin)
+marginal_effects(fit_lin)
+
+# fit and summarize the categorical model
+fit_cat <- brm(phcs ~ d455c, data = cwp, prior = prior_b)
+summary(fit_cat)
+marginal_effects(fit_cat)
+
+# compare models using approximate LOO-CV
+loo_compare(loo(fit_mo), loo(fit_lin), loo(fit_cat))
+model_weights(fit_mo, fit_lin, fit_cat, weights = "loo")
+
+
+# we will now include both d455 and d450 into the model
+
+# add a prior for the simplex parameter of d450
+prior_s2 <- 
   prior(dirichlet(1, 1, 1), class = "simo", coef = "mod4501") +
   prior(dirichlet(1, 1, 1, 1), class = "simo", coef = "mod4551")
 
-# fit and summarize the first model
-fit1 <- brm(phcs ~ mo(d450) + mo(d455), data = cwp, prior = prior1)
-summary(fit1)
-marginal_effects(fit1)
+# fit and summarize models including two predictors
+fit_mo2 <- brm(phcs ~ mo(d455) + mo(d450), data = cwp, 
+               prior = prior_b + prior_s2)
+summary(fit_mo2)
+plot(marginal_effects(fit_mo2), ask = FALSE)
 
-# fit and summarize the second model
-prior2 <- prior(normal(0, 2.5), class = "b")
-fit2 <- brm(phcs ~ d450 + d455, data = cwp, prior = prior2)
-summary(fit2)
-marginal_effects(fit2)
+fit_lin2 <- brm(phcs ~ d455 + d450, data = cwp, prior = prior_b)
+summary(fit_lin2)
+plot(marginal_effects(fit_lin2), ask = FALSE)
 
-# compare models using stacking
-model_weights(fit1, fit2, weights = "loo2")
+fit_cat2 <- brm(phcs ~ d455c + d450c, data = cwp, prior = prior_b)
+summary(fit_cat2)
+plot(marginal_effects(fit_cat2), ask = FALSE)
 
-# prepare data for the full models with all predictors
-cwp_NA <- rbind(cwp, c(rep(4, 51), phcs = NA))
+# compare models using approximate LOO-CV
+loo_compare(loo(fit_mo2), loo(fit_lin2), loo(fit_cat2))
+model_weights(fit_mo2, fit_lin2, fit_cat2, weights = "loo")
 
-# shrinkage priors for the full models
-prior3 <- prior(horseshoe(par_ratio = 0.1), class = "b")
-
-# fit the full monotonic model which may take some time
-pred <- setdiff(names(cwp_NA), "phcs")
-formula3 <- paste0("phcs | mi() ~ ", paste0("mo(", pred, ")", collapse = "+"))
-formula3 <- as.formula(formula3)
-fit3 <- brm(formula3, data = cwp_NA, prior = prior3) 
-
-# plot monotonic size parameters
-ps_bsp <- posterior_samples(fit3, pars = "^bsp_")
-names(ps_bsp) <- sub("^bsp_mo", "", names(ps_bsp))
-medians_bsp <- apply(ps_bsp, 2, median)
-ps_bsp <- ps_bsp[, order(medians_bsp)]
-bayesplot::mcmc_intervals(ps_bsp, prob_outer = 0.95)  
-
-# fit the full model with linear effects
-fit4 <- brm(phcs | mi() ~ ., data = cwp_NA, prior = prior3)
-summary(fit4)
-
-# compare models
-model_weights(fit3, fit4, weights = "loo2", newdata = cwp) 
