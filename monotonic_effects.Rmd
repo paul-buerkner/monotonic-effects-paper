@@ -187,7 +187,7 @@ understandable by a wider audience outside of mathematics.
 The above described approaches to modeling ordinal predictors, especially those which
 induce some regularization, have good theoretical and practical properties when
 it comes to predictive accuracy [e.g., @gertheiss2009; @gu2013; @helwig2017].
-Further, the parameter estimates are easy to interprete as they simply consist
+Further, the parameter estimates are easy to interpret as they simply consist
 of the (regularized) response means per ordinal predictor category. As such,
 they are conceptually closer to how categorical predictors, rather than
 continuous predictors, are handled in regression models. In contrast, in the
@@ -1423,7 +1423,7 @@ conceptualization as generalizations of continuous predictor terms, rather then
 as (penalized) categorial predictor terms. This allows for the intuitive
 interpretation of the scale parameter as an ordinary regression coefficient,
 except that we do not assume the shape of the relationship as linear, but more
-general as monotonic. It is this clear separation between the strength of the
+generally as monotonic. It is this clear separation between the strength of the
 relationship and its shape that, in our opinion, makes monotonic effects very
 appealing for interpretation and communication. Of course, there is also
 nothing wrong with directly reporting and interpreting the estimated
