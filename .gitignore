@@ -48,4 +48,4 @@ docs/
 models/
 *.aux
 *.out
-
+*.sh
