@@ -1,7 +1,7 @@
 ---
 title: "Modeling Monotonic Effects of Ordinal Predictors in Regression Models"
 shorttitle: "Monotonic Effects"
-author: 
+author:
   - name: Paul-Christian Bürkner
     affiliation: "1"
     corresponding: yes
@@ -15,28 +15,27 @@ affiliation:
   - id: 2
     institution: Assistance publique - Hôpitaux de Paris, France
 abstract: |
-  Ordinal predictors are commonly used in regression models. However, they are
-  often incorrectly treated as either nominal or metric thus under- or
-  overestimating the contained information. This is understandable insofar as
-  generally applicable solutions or corresponding statistical software are still
-  underdeveloped. In practice, there are situations in which it is reasonable to
-  assume the effect of an ordinal predictor to be monotonic and we propose a new
-  way of parameterizing such monotonic effects. The reparameterization is done
-  in terms of a scale parameter $b$ representing the direction and size of the
-  effect and a simplex parameter $\bm{\zeta}$ modeling the normalized
-  differences between categories. This ensures that predictions increase or
-  decrease monotonically, while changes between adjacent categories may vary
-  across categories. This formulation generalizes to interaction terms as well
-  as multilevel structures. Monotonic effects may not only be applied to ordinal
-  predictors, but also to other discrete variables for which a monotonic
-  relationship is plausible. In simulation studies, we show that the model is
-  well calibrated and, in case of monotonicity, has similar or even better
-  predictive performance than other approaches designed to handle ordinal
-  predictors.  Using Stan, we developed a Bayesian estimation method for
-  monotonic effects, which allows to incorporate prior information and to check
-  the assumption of monotonicity. We have implemented this method in the R
-  package brms, so that fitting monotonic effects in a fully Bayesian framework
-  is now straightforward.
+  Ordinal predictors are commonly used in regression models. They are often
+  incorrectly treated as either nominal or metric, thus under- or overestimating
+  the contained information. Such practices may lead to worse inference and
+  predictions compared to methods which are specifically designed for this
+  purpose. We propose a new method for modeling ordinal predictors that applies
+  in situations in which it is reasonable to assume their effects to be
+  monotonic. The parameterization of such monotonic effects is realized in terms
+  of a scale parameter $b$ representing the direction and size of the effect and
+  a simplex parameter $\bm{\zeta}$ modeling the normalized differences between
+  categories. This ensures that predictions increase or decrease monotonically,
+  while changes between adjacent categories may vary across categories. This
+  formulation generalizes to interaction terms as well as multilevel structures.
+  Monotonic effects may not only be applied to ordinal predictors, but also to
+  other discrete variables for which a monotonic relationship is plausible. In
+  simulation studies, we show that the model is well calibrated and, in case of
+  monotonicity, has similar or even better predictive performance than other
+  approaches designed to handle ordinal predictors.  Using Stan, we developed a
+  Bayesian estimation method for monotonic effects, which allows to incorporate
+  prior information and to check the assumption of monotonicity. We have
+  implemented this method in the R package brms, so that fitting monotonic
+  effects in a fully Bayesian framework is now straightforward.
 keywords: Isotonic regression, Ordinal variables, Bayesian statistics, brms, 
   Stan, R
 lang: english
