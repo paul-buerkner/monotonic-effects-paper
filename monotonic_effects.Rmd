@@ -1016,7 +1016,8 @@ comp_preds %>%
   filter(!(D == 50 & model == "CAT")) %>%
   ggplot(aes(model, rmse)) +
   geom_boxplot() +
-  facet_wrap("facet", scales = "free_y")
+  facet_wrap("facet", scales = "free_y") +
+  labs(x = "Model", y = "RMSE")
 ```
 
 ```{r rmse-int-mo, fig.width=10, fig.height=7, fig.cap="Simulation results for the interaction models under true monotonicity based on $T = 1000$ simulation trials. LIN is not displayed as its RMSE is too large and thus obscures differences between other models. For the same reason, CAT is not displayed for $D = 50$. ISO and OSMO are not displayed as they have no corresponding interaction model. Abbreviations: N = number of observations; D = number of categories minus one; CAT = categorical model; CS = cubic spline model; ISO = Isotonic regression model; LIN = linear model; LS = Linear spline model; MO = monotonic model; OS = ordinal spline model; OSMO = ordinal monotonic spline model."}
@@ -1028,7 +1029,8 @@ comp_preds %>%
   filter(!(D == 50 & model == "CAT")) %>%
   ggplot(aes(model, rmse)) +
   geom_boxplot() +
-  facet_wrap("facet", scales = "free_y")
+  facet_wrap("facet", scales = "free_y") +
+  labs(x = "Model", y = "RMSE")
 ```
 
 In summary, in our simulations, MO yielded the same or better predictions than

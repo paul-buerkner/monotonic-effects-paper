@@ -1,7 +1,7 @@
 ---
-title: "Handling Ordinal Predictors in Regression Models via Monotonic Effects"
+title: "Modeling Monotonic Effects of Ordinal Predictors in Regression Models"
 author: "Paul Bürkner & Emmanuel Charpentier"
-date: "EAM Conference 2018"
+date: ""
 output: 
  beamer_presentation:
    #toc: True
@@ -37,7 +37,7 @@ knitr::knit_hooks$set(mysize = function(before, options, envir) {
 library(tidyverse)
 library(patchwork)
 library(brms)
-theme_set(theme_default())
+theme_set(theme_bw())
 ```
 
 ## Linear Regression
@@ -61,57 +61,63 @@ Predictors $x_k$ may be
 
 ```{r, echo=FALSE, fig.width=6, fig.height=4.2}
 dat <- data.frame(x = 0:3, y = c(0, 60, 90, 100))
-
 arrow_dat <- data.frame(
   x = c(0, 0, 1, 1, 2, 2),
   y = c(2, 98, 2, 58, 62, 88),
   group = c(1, 1, 2, 2, 3, 3)
 )
-  
 ggplot(dat, aes(x, y)) + 
   geom_line(size = 1.5) +
   geom_line(
     aes(group = group),
     data = arrow_dat,
-    arrow = arrow(length=unit(0.30, "cm"), ends="both", type = "closed")
+    arrow = arrow(length = unit(0.30, "cm"), ends = "both", type = "closed")
   ) +
   scale_y_continuous(breaks = seq(0, 100, 10)) +
-  theme(text = element_text(size = 13)) +
   annotate(
-    'text', x = 0.1, y = 55, 
-    label = "b",
-    parse = TRUE, size=10
+    'text', x = 0.2, y = 55, 
+    label = "b~D",
+    parse = TRUE, size = 10
   ) +
   annotate(
-    'text', x = 1.3, y = 25, 
-    label = "b~zeta[1]",
-    parse = TRUE, size=10
+    'text', x = 1.35, y = 25, 
+    label = "b~D~zeta[1]",
+    parse = TRUE, size = 10
   ) + 
   annotate(
-    'text', x = 2.3, y = 75, 
-    label = "b~zeta[2]",
-    parse = TRUE, size=10
+    'text', x = 2.35, y = 75, 
+    label = "b~D~zeta[2]",
+    parse = TRUE, size = 10
   )
 ```
 
 
 ## Monotonic Effects: Mathematical Formulation
 
-Monotonic regression of an ordinal predictor $x \in \{0, ..., C\}$:
+Monotonic regression of an ordinal predictor $x \in \{0, ..., D\}$:
+
 $$
-\eta = b_0 + b \sum_{i = 1}^{x} \zeta_i
+\eta = b_0 + b D \sum_{i = 1}^{x} \zeta_i
 $$
 
-- For notational convenience: $\sum_{i = 1}^{0} \zeta_i = 0$
-- Parameter $\zeta$ is a simplex: $\zeta_i \in [0,1]$ and $\sum_{i = 1}^C \zeta_i = 1$
+- Parameter $\zeta$ is a simplex: $\zeta_i \in [0,1]$ and 
+$\sum_{i = 1}^D \zeta_i = 1$
 - Parameter $b$ may be any real value
 
+\hfill \newline
+
+Define the monotonic transform:
+$$
+\text{mo}(x, \zeta) =  D \sum_{i = 1}^{x} \zeta_i
+$$
+
+<!--
 Implications:
 
 - Effect of $x$ is either monotonically increasing or decreasing
 - $b$ indicates the direction and scale of the effect
-- Categories are equidistant if and only if $\zeta_i = 1/C$
-
+- Categories are equidistant only if $\zeta_i = 1/D$
+-->
 
 ## Monotonic Effects: Interactions
 
@@ -120,19 +126,38 @@ $$
 \eta = b_0 + b_1 \, z + b_2 \, x +  b_3 \, z \, x
 $$
 
-Generalization to monotonic effects:
+\hfill \newline
 
-- Define $\text{mo}(x, \zeta) := \sum_{i = 1}^{x} \zeta_i$ for brevity
-- Replace $x$ with $\text{mo}(x, \zeta)$:
+Generalize to monotonic effects by replacing $x$ with $\text{mo}(x, \zeta)$:
 $$
 \eta = b_0 + b_1 \, z + b_2 \, \text{mo}(x, \zeta_{b_2}) +  b_3 \, z \, \text{mo}(x, \zeta_{b_3})
 $$
 
+<!--
 - Relation of $\zeta_{b_2}$ and $\zeta_{b_3}$ determines the type of monotonicty
 - $x$ is (conditionally) monotonic for all $z$ if $\zeta_{b_2} = \zeta_{b_3}$
-
+-->
 
 ## Monotonic Effects in a Bayesian Framework
+
+"If you quantify uncertainty with probability you are a Bayesian."
+
+\raggedleft
+Micheal Betancourt
+
+\hfill \break
+
+\raggedright
+Bayes Theorem:
+$$
+p(\theta \,|\, y) = \frac{p(y \,|\, \theta) \, p(\theta)}{p(y)}
+$$
+
+\hfill \break
+The monotonic parameters $b$ and $\zeta$ are both part of $\theta$
+
+
+## Priors for Monotonic Effects in a Bayesian Framework
 
 Priors on $b$:
 
@@ -144,7 +169,7 @@ Prior on $\zeta$:
 - Dirichlet prior: $\zeta \sim \mathcal{D}(\alpha)$
 - $\alpha$: Concentration parameter of the same length as $\zeta$
 
-Let $\alpha_0 = \sum_{i = 1}^{C} \alpha_i$, then:
+Let $\alpha_0 = \sum_{i = 1}^{D} \alpha_i$, then:
 $$
 \mathbb{E}(\zeta_i) = \frac{\alpha_i}{\alpha_0}
 $$
@@ -180,11 +205,13 @@ ggplot(df, aes(x1, x2, fill = density)) +
 
 ## Monotonic effects in the R package brms
 
+<!--
 **brms** is a comprehensive framework for Bayesian regression models
 
 **Stan** is used for the model fitting behind the scenes
 
 Monotonic effects are fully built into the formula syntax of brms
+-->
 
 \bigskip
 
@@ -217,13 +244,12 @@ Examples for CWP measures:
 
 Scale from $0$ ('no problem') to $4$ ('complete problem')
 
-Data provided in the **ordPens** package
-
-For details see @gertheiss2011CWP
+Reference: @gertheiss2011CWP
 
 \bigskip
 
 Plausible assumption: CWP measures have **monotonic effects**
+
 
 ## Case Study: Model Specification
 
@@ -232,9 +258,14 @@ data("ICFCoreSetCWP", package = "ordPens")
 cwp <- ICFCoreSetCWP %>% select(-starts_with("e"))
 ```
 
-```{r fit1, results="hide", message=FALSE, warning = FALSE}
+```{r, eval=FALSE}
 library(brms)
 fit1 <- brm(phcs ~ mo(d450) + mo(d455), data = cwp)
+```
+
+```{r fit1, include=FALSE}
+fit1 <- brm(phcs ~ mo(d450) + mo(d455), data = cwp,
+            file = "models/fit4")
 ```
 
 ```{r, echo=FALSE, fig.width=7, fig.height = 4}
@@ -245,11 +276,86 @@ pme1 <- plot(marginal_effects(fit1), plot = FALSE, ask = FALSE)
 ```
 
 
+## Parameter Recovery
+
+Question: How well can a model recover its own parameters?
+
+Steps of Simulation Based Calibration (SBC):
+
+- Sample $\tilde{\theta} \sim p(\theta)$ from the prior
+- Sample $\tilde{y} \sim p(y \, | \, \tilde{\theta})$ from the likelihood
+- Sample $\{\theta_1, \ldots, \theta_L\} \sim p(\theta | \tilde{y})$ from the posterior
+- Compute the rank statistic $r(\{\theta_1, \ldots, \theta_L\} \, | \, \tilde{\theta})$
+- Repeat the process multiple times
+- Plot the rank statistics in a histogram
+
+For well callibrated models the histogram is (approximately) uniform
+
+## Parameter Recovery: Monotonic Main Effects
+
+```{r, include=FALSE}
+SBC_ranks <- readRDS("simulations/SBC_ranks.rds") %>%
+  mutate(
+    index = case_when(
+      grepl("^simo_", par) ~ 
+        as.numeric(str_extract(par, "(?<=[[:digit:]])[[:digit:]]+$")),
+      TRUE ~ NA_real_
+    ),
+    par = case_when(
+      grepl("^simo_", par) ~ 
+        paste0(substr(par, 1, nchar(par) - nchar(index)), "[", index, "]"),
+      TRUE ~ par
+    )
+  )
+  
+B <- 11 
+lb = qbinom(0.005, 1000, 1 / B)
+ub = qbinom(0.995, 1000, 1 / B)
+```
+
+```{r SBC-main-4-200, echo=FALSE, fig.height=4, fig.width=8}
+SBC_ranks %>%
+  filter(D == 4, nobs == 200, pred == "main") %>%
+  ggplot(aes(value)) +
+  facet_wrap("par", ncol = 4) +
+  geom_histogram(bins = B, color = "black", fill = "lightblue") +
+  geom_hline(yintercept = lb, size = 1) + 
+  geom_hline(yintercept = ub, size = 1) +
+  scale_x_continuous(breaks = seq(0, B - 1, by = 2)) +
+  labs(x = "", y = "") +
+  theme_bw() +
+  theme(
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+## Parameter Recovery: Monotonic Interactions
+
+```{r SBC-int-4-200, echo=FALSE, fig.height=5, fig.width=8}
+SBC_ranks %>%
+  filter(D == 4, nobs == 200, pred == "interaction") %>%
+  ggplot(aes(value)) +
+  facet_wrap("par", ncol = 6) +
+  geom_histogram(bins = B, color = "black", fill = "lightblue") +
+  geom_hline(yintercept = lb, size = 1) + 
+  geom_hline(yintercept = ub, size = 1) +
+  scale_x_continuous(breaks = seq(0, B - 1, by = 2)) +
+  labs(x = "", y = "") +
+  theme_bw() +
+  theme(
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+
 ## Other Approaches for Modelling Ordinal Predictors
 
 Categorical isotonic regression:
 
-- Estimate group means of ordinal categories such that $\mu_0 < \mu_1 < ... < \mu_C$
+- Estimate group means of ordinal categories such that 
+$\mu_0 < \mu_1 < ... < \mu_C$
 - Equivalent to monotonic effects in simple cases
 - Harder to penalize via priors
 
@@ -257,14 +363,54 @@ Penalized regression [@gertheiss2009]:
 
 - Apply dummy coding on the ordinal variable
 - Penalize larger differences between adjacent categories via 
-$$J(b) =\sum_{i = 1}^C (b_i - b_{i-1})^2$$
+$$J(b) =\sum_{i = 1}^D (b_i - b_{i-1})^2$$
 - Closely related to regression splines
 - No monotonicity constraint
 
+
+## Model Comparison: Monotonic Main Effect
+
+```{r, echo=FALSE}
+comp_preds <- readRDS("simulations/comp_preds.rds") %>%
+  arrange(D) %>%
+  mutate(
+    model = str_to_upper(model),
+    facet = paste0("D = ", D, " & N = ", nobs),
+    facet = factor(facet, levels = unique(facet))
+  )
+```
+
+```{r rmse-main-mo, echo=FALSE, fig.width=10, fig.height=7}
+comp_preds %>%
+  filter(effect == "mo", pred == "main") %>%
+  # some RMSEs are too large to be reasonably displayed
+  filter(model != "LIN") %>%
+  filter(!(D == 50 & model == "CAT")) %>%
+  ggplot(aes(model, rmse)) +
+  geom_boxplot() +
+  facet_wrap("facet", scales = "free_y") +
+  labs(x = "Model", y = "RMSE")
+```
+
+## Model Comparison: Monotonic Interactions
+
+```{r rmse-int-mo, echo=FALSE, fig.width=10, fig.height=7}
+comp_preds %>%
+  filter(effect == "mo", pred == "interaction") %>%
+  filter(!is.na(rmse)) %>%
+  # some RMSEs are too large to be reasonably displayed
+  filter(model != "LIN") %>%
+  filter(!(D == 50 & model == "CAT")) %>%
+  ggplot(aes(model, rmse)) +
+  geom_boxplot() +
+  facet_wrap("facet", scales = "free_y") +
+  labs(x = "Model", y = "RMSE")
+```
+
+<!--
 ## Learn More about Monotonic Effects and brms
 
-Manuscript draft:
-https://github.com/paul-buerkner/monotonic-effects-paper
+Preprint: https://psyarxiv.com/9qkhj/ 
 
 Vignette in brms: `vignette("brms_monotonic")`
 
@@ -277,16 +423,116 @@ Forums: http://discourse.mc-stan.org/
 Email: paul.buerkner@gmail.com
 
 Twitter: \@paulbuerkner
+-->
+
+
+##
+
+\centering
+\LARGE Thank you!
 
 
 ## References
+
+Bürkner, P., & Charpentier, E. (in review). Modeling Monotonic Effects of Ordinal Predictors in Regression Models. https://psyarxiv.com/9qkhj/ 
 
 <div id="refs"></div>
 
 ## 
 
 \centering
-\LARGE{Appendix}
+\LARGE Appendix
+
+## Parameter Recovery: Interactions with many Predictor Categories (1)
+
+```{r SBC-int-50-50, echo=FALSE, fig.height=5, fig.width=8}
+SBC_ranks %>%
+  filter(D == 50, nobs == 50, pred == "interaction") %>%
+  filter(index %in% c(NA, 1:4)) %>%
+  ggplot(aes(value)) +
+  facet_wrap("par", ncol = 6) +
+  geom_histogram(bins = B, color = "black", fill = "lightblue") +
+  geom_hline(yintercept = lb, size = 1) + 
+  geom_hline(yintercept = ub, size = 1) +
+  scale_x_continuous(breaks = seq(0, B - 1, by = 2)) +
+  labs(x = "", y = "") +
+  theme_bw() +
+  theme(
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+## Parameter Recovery: Interactions with many Predictor Categories (2)
+
+```{r SBC-int-50-1000, echo=FALSE, fig.height=5, fig.width=8}
+SBC_ranks %>%
+  filter(D == 50, nobs == 1000, pred == "interaction") %>%
+  filter(index %in% c(NA, 1:4)) %>%
+  ggplot(aes(value)) +
+  facet_wrap("par", ncol = 6) +
+  geom_histogram(bins = B, color = "black", fill = "lightblue") +
+  geom_hline(yintercept = lb, size = 1) + 
+  geom_hline(yintercept = ub, size = 1) +
+  scale_x_continuous(breaks = seq(0, B - 1, by = 2)) +
+  labs(x = "", y = "") +
+  theme_bw() +
+  theme(
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+## Model Comparison: Linear Main Effects
+
+```{r rmse-main-lin, echo=FALSE, fig.width=10, fig.height=7}
+comp_preds %>%
+  filter(effect == "lin", pred == "main") %>%
+  ggplot(aes(model, rmse)) +
+  geom_boxplot() +
+  facet_wrap("facet", scales = "free_y") +
+  labs(x = "Model", y = "RMSE")
+```
+
+## Model Comparison: Linear Interactions
+
+```{r rmse-int-lin, echo=FALSE, fig.width=10, fig.height=7}
+comp_preds %>%
+  filter(effect == "lin", pred == "interaction") %>%
+  filter(!is.na(rmse)) %>%
+  # some RMSEs are too large to be reasonably displayed
+  filter(!(D == 50 & model == "CAT")) %>%
+  ggplot(aes(model, rmse)) +
+  geom_boxplot() +
+  facet_wrap("facet", scales = "free_y") +
+  labs(x = "Model", y = "RMSE")
+```
+
+## Model Comparison: Categorical Main Effects
+
+```{r rmse-main-cat, echo=FALSE, fig.width=10, fig.height=7}
+comp_preds %>%
+  filter(effect == "cat", pred == "main") %>%
+  filter(model != "LIN") %>%
+  ggplot(aes(model, rmse)) +
+  geom_boxplot() +
+  facet_wrap("facet", scales = "free_y") +
+  labs(x = "Model", y = "RMSE")
+```
+
+## Model Comparison: Categorical Interactions
+
+```{r rmse-int-cat, echo=FALSE, fig.width=10, fig.height=7}
+comp_preds %>%
+  filter(effect == "cat", pred == "interaction") %>%
+  filter(!is.na(rmse)) %>%
+  # some RMSEs are too large to be reasonably displayed
+  filter(model != "LIN") %>%
+  filter(!(D == 50 & model == "CAT")) %>%
+  ggplot(aes(model, rmse)) +
+  geom_boxplot() +
+  facet_wrap("facet", scales = "free_y")
+```
 
 
 ## Counter Example to the Conditional Monotonicity
