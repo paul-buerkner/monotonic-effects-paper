@@ -40,6 +40,7 @@ rsconnect/
 Archiv/
 monotonic_effects_files/
 monotonic_effects.tex
+monotonic_effects_slides_files/
 correspondence/
 frequentist_estimators/
 *.log
@@ -49,3 +50,4 @@ models/
 *.aux
 *.out
 *.sh
+*.vrb
