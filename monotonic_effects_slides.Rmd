@@ -68,6 +68,21 @@ arrow_dat <- data.frame(
 )
 ggplot(dat, aes(x, y)) + 
   geom_line(size = 1.5) +
+  scale_y_continuous(breaks = seq(0, 100, 10))
+```
+
+
+## Monotonic Effects: Idea
+
+```{r, echo=FALSE, fig.width=6, fig.height=4.2}
+dat <- data.frame(x = 0:3, y = c(0, 60, 90, 100))
+arrow_dat <- data.frame(
+  x = c(0, 0, 1, 1, 2, 2),
+  y = c(2, 98, 2, 58, 62, 88),
+  group = c(1, 1, 2, 2, 3, 3)
+)
+ggplot(dat, aes(x, y)) + 
+  geom_line(size = 1.5) +
   geom_line(
     aes(group = group),
     data = arrow_dat,
@@ -143,7 +158,7 @@ $$
 "If you quantify uncertainty with probability you are a Bayesian."
 
 \raggedleft
-Micheal Betancourt
+Michael Betancourt
 
 \hfill \break
 
@@ -177,13 +192,13 @@ $$
 \text{SD}(\zeta_i) = \sqrt{\frac{\alpha_i (\alpha_0 - \alpha_i)}{(\alpha_0^2 (\alpha_0 + 1)}}
 $$
 
-## Dirichlet Prior: Visualization for $\alpha = (2, 1.5, 1)$
+## Dirichlet Prior: Visualization for $\alpha = (3, 2, 1)$
 
 \centering
 
 ```{r, echo=FALSE, fig.width=3.3, fig.height=3.3}
 # knitr::include_graphics("graphics/Dirichlet-3d-panel.png")
-alpha <- c(2, 1.5, 1)
+alpha <- c(3, 2, 1)
 step <- 0.001
 df <- seq(step, 1 - step, step) %>%
   map(~cbind(., seq(step, 1 - ., step))) %>%
@@ -197,11 +212,48 @@ df <- seq(step, 1 - step, step) %>%
   filter(!is.na(density)) %>%
   identity()
 
-ggplot(df, aes(x1, x2, fill = density)) +
+gg_dirichlet <- ggplot(df, aes(x1, x2, fill = density)) +
   geom_raster() +
   scale_fill_viridis_c() +
-  guides(fill = FALSE)
+  guides(fill = FALSE) +
+  labs(x = expression(zeta[1]), y = expression(zeta[2])) +
+  theme_default()
+
+gg_dirichlet
 ```
+
+
+## Dirichlet Prior: Visualization for $\alpha = (3, 2, 1)$
+
+\centering
+```{r, include=FALSE}
+bprior <- prior(normal(33.3, 5), b) +
+  prior(normal(0, 5), Intercept) +
+  prior(dirichlet(3, 2, 1), simo, coef = "mox1")
+dat_prior <- data.frame(y = rnorm(4), x = 0:3)
+fit_prior <- brm(
+  y ~ mo(x), data = dat_prior, prior = bprior,
+  sample_prior = "only", file = "models/fit_prior"
+)
+```
+
+```{r, echo=FALSE, fig.height=3.3, fig.width=7}
+me_prior <- marginal_effects(fit_prior, probs = c(0.5, 0.5))
+me_prior <- plot(me_prior, plot = FALSE)[[1]] +
+  theme_default()
+gg_dirichlet + me_prior
+```
+
+## Dirichlet Prior: Visualization for $\alpha = (3, 2, 1)$
+
+\centering
+```{r, echo=FALSE, fig.height=3.3, fig.width=7}
+me_prior <- marginal_effects(fit_prior)
+me_prior <- plot(me_prior, plot = FALSE)[[1]] +
+  theme_default()
+gg_dirichlet + me_prior
+```
+
 
 ## Monotonic effects in the R package brms
 
@@ -278,18 +330,16 @@ pme1 <- plot(marginal_effects(fit1), plot = FALSE, ask = FALSE)
 
 ## Parameter Recovery
 
-Question: How well can a model recover its own parameters?
+How well can a model recover its own parameters?
 
-Steps of Simulation Based Calibration (SBC):
+- Simulate data from the model
+- Fit the model to the simulated data
+- Compare estimates to the ground truth
 
-- Sample $\tilde{\theta} \sim p(\theta)$ from the prior
-- Sample $\tilde{y} \sim p(y \, | \, \tilde{\theta})$ from the likelihood
-- Sample $\{\theta_1, \ldots, \theta_L\} \sim p(\theta | \tilde{y})$ from the posterior
-- Compute the rank statistic $r(\{\theta_1, \ldots, \theta_L\} \, | \, \tilde{\theta})$
-- Repeat the process multiple times
-- Plot the rank statistics in a histogram
+\hfill \newline
 
-For well callibrated models the histogram is (approximately) uniform
+Bayesian version: Simulation Based Calibration (SBC) by @talts2018
+
 
 ## Parameter Recovery: Monotonic Main Effects
 
@@ -349,26 +399,17 @@ SBC_ranks %>%
   )
 ```
 
-
 ## Other Approaches for Modelling Ordinal Predictors
 
-Categorical isotonic regression:
+- Continuous linear regression
+- Categorical linear regression
+- Categorical isotonic regression
+- Penalized categorical regression
+- Monotonic penalized categorical regression
+- Regression splines
+- ...
 
-- Estimate group means of ordinal categories such that 
-$\mu_0 < \mu_1 < ... < \mu_C$
-- Equivalent to monotonic effects in simple cases
-- Harder to penalize via priors
-
-Penalized regression [@gertheiss2009]:
-
-- Apply dummy coding on the ordinal variable
-- Penalize larger differences between adjacent categories via 
-$$J(b) =\sum_{i = 1}^D (b_i - b_{i-1})^2$$
-- Closely related to regression splines
-- No monotonicity constraint
-
-
-## Model Comparison: Monotonic Main Effect
+## Model Comparison: Monotonic Main Effects
 
 ```{r, echo=FALSE}
 comp_preds <- readRDS("simulations/comp_preds.rds") %>%
@@ -443,6 +484,25 @@ Bürkner, P., & Charpentier, E. (in review). Modeling Monotonic Effects of Ordin
 \centering
 \LARGE Appendix
 
+
+## Simulation Based Calibration
+
+How well can a model recover its own parameters?
+
+Steps of Simulation Based Calibration (SBC):
+
+- Sample $\tilde{\theta} \sim p(\theta)$ from the prior
+- Sample $\tilde{y} \sim p(y \, | \, \tilde{\theta})$ from the likelihood
+- Sample $\{\theta_1, \ldots, \theta_L\} \sim p(\theta | \tilde{y})$ from the posterior
+- Compute the rank statistic $r(\{\theta_1, \ldots, \theta_L\} \, | \, \tilde{\theta})$
+- Repeat the process multiple times
+- Plot the rank statistics in a histogram
+
+For well callibrated models the histogram is (approximately) uniform
+
+Reference: @talts2018
+
+
 ## Parameter Recovery: Interactions with many Predictor Categories (1)
 
 ```{r SBC-int-50-50, echo=FALSE, fig.height=5, fig.width=8}
@@ -482,6 +542,24 @@ SBC_ranks %>%
     axis.ticks.y = element_blank()
   )
 ```
+
+## Other Approaches for Modelling Ordinal Predictors
+
+Categorical isotonic regression:
+
+- Estimate group means of ordinal categories such that 
+$\mu_0 < \mu_1 < ... < \mu_C$
+- Equivalent to monotonic effects in simple cases
+- Harder to penalize via priors
+
+Penalized regression [@gertheiss2009]:
+
+- Apply dummy coding on the ordinal variable
+- Penalize larger differences between adjacent categories via 
+$$J(b) =\sum_{i = 1}^D (b_i - b_{i-1})^2$$
+- Closely related to regression splines
+- No monotonicity constraint
+
 
 ## Model Comparison: Linear Main Effects
 
@@ -535,7 +613,40 @@ comp_preds %>%
 ```
 
 
-## Counter Example to the Conditional Monotonicity
+## Proof: Monotonicity
+
+Proposition: Monotonic effects are indeed monotonic.
+
+\hfill \newline
+
+Proof idea:
+$$
+b \text{mo}(x + 1, \zeta) - b \text{mo}(x, \zeta) = 
+b D \sum_{i = 1}^{x+1} \zeta_i - b D \sum_{i = 1}^{x} \zeta_i = b D \zeta_{x+1}
+$$
+
+Since $D > 0$ and $\zeta_{x+1} > 0$, the linear predictor is
+monotonically increasing if $b \geq 0$ and monotonically decreasing if 
+$b \leq 0$.
+
+## Proof: Conditional Monotonicity
+
+Proposition: If all $\zeta$ belonging to $x$ are the same, then the predictions
+are monotonic in $x$ conditional on all possible values of all other predictors.
+
+\hfill \newline
+
+Proof idea:
+$$
+\eta(x) = b_0 + \sum_{k=1}^K b_k D_k \sum_{i = 1}^x \zeta_i = b_0 + 
+\left( \sum_{k=1}^K b_k D_k \right) \left( \sum_{i = 1}^x \zeta_i \right)
+$$
+
+If we define $b = \sum_{i=1}^K b_i D_i$ we see that $\eta(x)$ is
+monotonic in $x$ with the sign of the effect determined by the sign of
+$b$.
+
+## Counter Example to General Conditional Monotonicity
 
 Model: $\eta = b_0 + b_1 \, z + b_2 \, \text{mo}(x, \zeta_{b_2}) +  b_3 \, z \, \text{mo}(x, \zeta_{b_3})$
 
@@ -558,4 +669,3 @@ ggplot(dat, aes(x, y, col = z)) +
   scale_y_continuous(breaks = seq(0, 100, 10)) +
   scale_x_continuous(breaks = seq(0, 2, 1))
 ```
-
