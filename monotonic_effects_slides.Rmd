@@ -240,7 +240,7 @@ fit_prior <- brm(
 ```{r, echo=FALSE, fig.height=3.3, fig.width=7}
 me_prior <- marginal_effects(fit_prior, probs = c(0.5, 0.5))
 me_prior <- plot(me_prior, plot = FALSE)[[1]] +
-  theme_default()
+  theme_default() + ylim(c(-10, 140))
 gg_dirichlet + me_prior
 ```
 
@@ -250,7 +250,7 @@ gg_dirichlet + me_prior
 ```{r, echo=FALSE, fig.height=3.3, fig.width=7}
 me_prior <- marginal_effects(fit_prior)
 me_prior <- plot(me_prior, plot = FALSE)[[1]] +
-  theme_default()
+  theme_default() + ylim(c(-10, 140))
 gg_dirichlet + me_prior
 ```
 
@@ -332,9 +332,9 @@ pme1 <- plot(marginal_effects(fit1), plot = FALSE, ask = FALSE)
 
 How well can a model recover its own parameters?
 
-- Simulate data from the model
+- Simulate data from the model with known parameters
 - Fit the model to the simulated data
-- Compare estimates to the ground truth
+- Compare estimates to the known parameters
 
 \hfill \newline
 
