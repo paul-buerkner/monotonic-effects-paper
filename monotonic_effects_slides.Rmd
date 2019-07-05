@@ -189,7 +189,7 @@ $$
 \mathbb{E}(\zeta_i) = \frac{\alpha_i}{\alpha_0}
 $$
 $$
-\text{SD}(\zeta_i) = \sqrt{\frac{\alpha_i (\alpha_0 - \alpha_i)}{(\alpha_0^2 (\alpha_0 + 1)}}
+\text{SD}(\zeta_i) = \sqrt{\frac{\alpha_i (\alpha_0 - \alpha_i)}{\alpha_0^2 (\alpha_0 + 1)}}
 $$
 
 ## Dirichlet Prior: Visualization for $\alpha = (3, 2, 1)$
@@ -283,51 +283,6 @@ y ~ mo(x) + (mo(x) | g)
 ```
 
 
-## Case Study: Measures of Chronic Widespread Pain (CWP)
-
-Objective: Predict subjective physical health by measures of CWP
-
-\bigskip
-
-Examples for CWP measures:
-
-- Impairments in walking
-- Impairments in moving around
-
-Scale from $0$ ('no problem') to $4$ ('complete problem')
-
-Reference: @gertheiss2011CWP
-
-\bigskip
-
-Plausible assumption: CWP measures have **monotonic effects**
-
-
-## Case Study: Model Specification
-
-```{r, echo=FALSE}
-data("ICFCoreSetCWP", package = "ordPens")
-cwp <- ICFCoreSetCWP %>% select(-starts_with("e"))
-```
-
-```{r, eval=FALSE}
-library(brms)
-fit1 <- brm(phcs ~ mo(d450) + mo(d455), data = cwp)
-```
-
-```{r fit1, include=FALSE}
-fit1 <- brm(phcs ~ mo(d450) + mo(d455), data = cwp,
-            file = "models/fit4")
-```
-
-```{r, echo=FALSE, fig.width=7, fig.height = 4}
-pme1 <- plot(marginal_effects(fit1), plot = FALSE, ask = FALSE)
-(pme1[[1]] + xlab("d450 (walking)")) +
-  (pme1[[2]] + xlab("d455 (moving around)")) +
-  plot_layout(ncol = 2)
-```
-
-
 ## Parameter Recovery
 
 How well can a model recover its own parameters?
@@ -399,7 +354,7 @@ SBC_ranks %>%
   )
 ```
 
-## Other Approaches for Modelling Ordinal Predictors
+## Other Approaches for Modeling Ordinal Predictors
 
 - Continuous linear regression
 - Categorical linear regression
@@ -466,6 +421,11 @@ Email: paul.buerkner@gmail.com
 Twitter: \@paulbuerkner
 -->
 
+##
+
+\centering
+\LARGE Summary
+
 
 ##
 
@@ -483,6 +443,51 @@ Bürkner, P., & Charpentier, E. (in review). Modeling Monotonic Effects of Ordin
 
 \centering
 \LARGE Appendix
+
+
+## Case Study: Measures of Chronic Widespread Pain (CWP)
+
+Objective: Predict subjective physical health by measures of CWP
+
+\bigskip
+
+Examples for CWP measures:
+
+- Impairments in walking
+- Impairments in moving around
+
+Scale from $0$ ('no problem') to $4$ ('complete problem')
+
+Reference: @gertheiss2011CWP
+
+\bigskip
+
+Plausible assumption: CWP measures have **monotonic effects**
+
+
+## Case Study: Model Specification
+
+```{r, echo=FALSE}
+data("ICFCoreSetCWP", package = "ordPens")
+cwp <- ICFCoreSetCWP %>% select(-starts_with("e"))
+```
+
+```{r, eval=FALSE}
+library(brms)
+fit1 <- brm(phcs ~ mo(d450) + mo(d455), data = cwp)
+```
+
+```{r fit1, include=FALSE}
+fit1 <- brm(phcs ~ mo(d450) + mo(d455), data = cwp,
+            file = "models/fit4")
+```
+
+```{r, echo=FALSE, fig.width=7, fig.height = 4}
+pme1 <- plot(marginal_effects(fit1), plot = FALSE, ask = FALSE)
+(pme1[[1]] + xlab("d450 (walking)")) +
+  (pme1[[2]] + xlab("d455 (moving around)")) +
+  plot_layout(ncol = 2)
+```
 
 
 ## Simulation Based Calibration
