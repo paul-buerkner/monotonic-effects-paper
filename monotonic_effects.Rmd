@@ -1,5 +1,5 @@
 ---
-title: "Modeling Monotonic Effects of Ordinal Predictors in Regression Models"
+title: "Modeling Monotonic Effects of Ordinal Predictors in Bayesian Regression Models"
 shorttitle: "Monotonic Effects"
 author:
   - name: Paul-Christian Bürkner
@@ -123,13 +123,15 @@ it assumes the ordinal categories to be equidistant, which is clearly an
 oversimplication, and because it yields parameter estimates that are hard to
 interpret. 
 
-The literature on ordinal predictors can be summarized in terms of two connected
-lines of research. One is based on penalized regression/spline approaches
-specifically designed for ordinal predictors [@gertheiss2009;
-@gertheiss2011; @gertheiss2014; @gu2013; @alvarez2011] and the other are
-categorical types of isotonic regression [@barlow1972; @robertson1988]. 
-We begin by explaining the former approach. The main idea of the method proposed
-by @gertheiss2009 is to penalize large differences between adjacent categories.
+The literature on ordinal predictors may be divided into three partially
+inter-conntected lines of research. The first is based on penalized regression/spline 
+approaches specifically designed for ordinal predictors [@gertheiss2009;
+@gertheiss2011; @gertheiss2014; @gu2013; @alvarez2011], the second are
+categorical types of isotonic regression [@barlow1972; @robertson1988],
+and the third are ordinal latent variable models [@winship1984; @joreskog1994]. 
+We begin by explaining the penalized regression approach. 
+The main idea of the method proposed by
+@gertheiss2009 is to penalize large differences between adjacent categories.
 This is done by imposing a penality on the squared differences between the means
 of adjacent catgories, that is on $(\eta(x) - \eta(x - 1))^2$, where $x$ denotes
 values of the ordinal predictor and $\eta(x)$ denotes the predicted mean at
@@ -137,11 +139,12 @@ category $x$. The penalty reflects the expectation that, if a predictor is
 ordinal, changes may happen smoothly and larger differences should thus be
 unlikely. This approach allows for a principled and flexible handling of ordinal
 predictors in a way closely related to regression splines [@gertheiss2009;
-@gu2013]. In the original version of this approach [used in @gertheiss2009;
-@gertheiss2011; @gertheiss2014], the direction of the changes remains 
-unspecified and may vary across the range of the ordinal variable.
+@gu2013]. It also has a Bayesian interpretation in terms of priors on the
+category means [@gertheiss2009]. In the original version of this approach [used
+in @gertheiss2009; @gertheiss2011; @gertheiss2014], the direction of the changes 
+remains unspecified and may vary across the range of the ordinal variable.
 
-In a lot of practical settings, we do often expect the changes between adjacent
+In many practical settings, we do often expect the changes between adjacent
 categories to be *monotonic*, that is consistently negative or positive across
 the full range of the ordinal variable [e.g., @barlow1972]. For instance, the
 subjective well-being may be monotonically related to measures of physical or
@@ -150,7 +153,7 @@ hence in an ordinal manner. If we have theoretical reasons to expect a monotonic
 relationship, we may want to incorporate this assumption into our model to
 improve accuracy of the parameter estimates and predictions, but of course
 also to test whether this assumption was justified in the first place. Even when
-monotonicy is justified, the size of the changes may still vary across ordinal
+monotonicity is justified, the size of the changes may still vary across ordinal
 categories by a substantial amount as ordinality does not contain
 information about the distance between categories.
 
@@ -168,7 +171,9 @@ If the variable under study is categorical,
 the monotonicity assumption reduces to an ordering constraint on the predicted
 category means. Using frequentist approaches, the latter case has been studied
 extensively in @barlow1972 and @robertson1988 [see also @best1990; @dykstra1982;
-@lee1981; @wu2001; @rufibach2010]. For the purpose of studying ordinal
+@lee1981; @wu2001; @rufibach2010]. Bayesian approaches to order constraint
+category means and testing of these contraints have been develeoped as well
+[e.g., @klugkist2008; @danaher2012; @mulder2019]. For the purpose of studying ordinal
 predictors, we are primarily interested in the categorical type of isotonic
 regression although continuous types may provide useful predictions also for
 categorical predictors if they have sufficient number of categories [e.g., see
@@ -211,7 +216,33 @@ knowledge into the model that would otherwise remain unused, but also to
 regularize the model's predictions and make it robust against overfitting even
 in the absense of such specific knowledge.
 
-The structure of this paper is a follows. In Section 2, we will introduce
+The method proposed in the present paper, as well as other approaches discussed
+above, model ordinal predictors as *manifest* variables, that is do not
+explicitly consider potential measurement error in these predictors. In
+contrast, in latent variable models, it is common to model ordinal variables as
+indicators of an underlying *latent* continuous variable, from which the
+observed ordinal variable originated via categorization [e.g., @winship1984;
+@joreskog1994; @finney2006; @lei2009]. Such models then estimate the
+relationship between this latent variable and the (manifest or latent) response
+variable. This way, latent ordinal models are able to take measurement error
+into account and provide estimates of how the relationship between variables
+would have been if we had been able to directly observe the underlying true
+continuous construct. Importantly, this also implies a monotonic relationship
+between the manifest ordinal predictor and the response variable. A latent
+approach may be a reasonable modeling choice (a) if there is substantial
+measurement error and/or we are intereted in the (hypothetical) latent
+relationships between variables. In contrast, a manifest approach maybe a
+reasonable choice (a) if the variables are measured very precisely or simply
+known by design (e.g., discrete points in time in a longituditinal study), (b)
+if the main focus lies on making predictions for new response values, and/or (c)
+if the observable manifest relationships between variables are simply those
+which are of interest. It is beyond the scope of this paper to make a general
+point about manifest vs. latent approaches for ordinal variables. However, we
+want to point out that our proposed method treats ordinal predictors as manifest
+variables, as is the case for a lot of other prominent approaches [e.g.,
+@klugkist2008; @gertheiss2009; @gu2013].
+
+The structure of this paper is as follows. In Section 2, we will introduce
 monotonic effects as well as their mathematical foundation in detail. We
 continue by explaining a software implementation of monotonic effects in the R
 package 'brms' [@brms1;@brms2] in Section 3, which supports a wide and growing
@@ -235,11 +266,15 @@ We write
 $$
 y_n \sim D(\psi_{1n}, \psi_{2n}, \ldots, \psi_{Pn})
 $$
-
-to stress the dependency on the $n\textsuperscript{th}$ observation. Each
-$\psi_p$ ($1 \leq p \leq P$) may be predicted by a set of predictor variables 
-$\bm{X} = \{\bm{x}_1, \ldots, \bm{x}_K\}$ where each variable $\bm{x}_{k}$ is 
-a vector of length $N$.
+to stress the dependency on the $n\textsuperscript{th}$ observation. The domain
+of each parameter $\psi_p$ depends on the distribution $D$. For instance, the mean
+parameter of a normal distribution might take on all real values while the 
+probability parameter of a binomial distribution can only take on values
+in the interval $[0, 1]$. Each
+$\psi_p$ ($1 \leq p \leq P$; with individual elements $\psi_{pn}$)
+may be predicted by a vector of predictor variables 
+$\bm{X} = (\bm{x}_1, \ldots, \bm{x}_K)$ where each variable $\bm{x}_{k}$ is 
+itself a vector of length $N$.
 To regress $\psi_{p}$ on $\bm{X}$, we formulate $\psi_p$ in terms of a
 generalized linear model (GLM). To reduce the notational burden, we will drop
 the index $p$ in the following as the GLM is formulated in the same way for all
@@ -252,12 +287,13 @@ predictor term. Its $n\textsuperscript{th}$ element, $\eta_n$, may be written as
 \eta_{n} = \sum_{j = 0}^J b_j f_j(X_n).
 \end{equation}
 
-In Equation (\ref{glm}), $X_n$ denotes the set $\{x_{1n}, \ldots, x_{Kn}\}$ of
+In Equation (\ref{glm}), $X_n$ denotes the vector $(x_{1n}, \ldots, x_{Kn})$ of
 predictor values of the $n\textsuperscript{th}$ observation, $f_j$ are (possibly
 non-linear) transformations of the predictor variables and $b_j$ are the
 regression coefficients. Typically, $f_0 = 1$ is a constant function to include
 an intercept into the model. The notation above is a slightly non-standard
-formulation of a GLM. We use this notation in order to naturally generalize the
+formulation of a GLM [in fact we could speak of a generalized additive model 
+in this context; @hastie2017]. We use this notation in order to naturally generalize the
 framework to monotonic effects as explained in the following.
 
 A predictor variable which we want to model as monotonic must have discrete
@@ -286,7 +322,6 @@ define
 \text{mo: } \{0, \ldots, D\} \rightarrow [0, D], \quad 
 x \rightarrow \mo(x, \bm{\zeta}) = D \, \sum_{i = 1}^{x} \zeta_i
 \end{equation}
-
 and call it the *monotonic transform*. For notational convenience, we set
 $\sum_{i = 1}^{0} \zeta_i = 0$. The vector $\bm{\zeta}$ is defined as a simplex,
 which means that is it satisfies $\zeta_i \in [0,1]$ and 
@@ -302,15 +337,14 @@ value of $\bm{x}$) to $\eta_n$ can be written as:
 \begin{equation}
 b \mo(x_n, \bm{\zeta}) = b \, D \, \sum_{i = 1}^{x_{n}} \zeta_i
 \end{equation}
-
 where $b$ can take on any real value. In the above parameterization, $b$
 represents the size and the sign of the effect similar to an ordinary regression
 coefficient. That is, we do not have to specify the sign of the monotonic effect
 a-priori but let the model find out itself if effect is positive or negative,
 just as we do it for coefficients in ordinary regression models. To explicitely
 bring monotonic effects into our GLM framework from (\ref{glm}) we can set $b_j
-= b$ and $f_j = \mo(., \bm{\zeta})$. The reason monotonic effects cannot be
-included in standard GLMs is that the transformations $f_j$ are not fully known
+= b$ and $f_j = \mo(., \bm{\zeta})$. However, monotonic effects cannot be
+included in standard GLMs because the transformations $f_j$ are not fully known
 a-priori but contain the parameter $\bm{\zeta}$, which needs to be
 estimated along with all other model parameters. As such, monotonic effects have
 some similarities with regression splines, a fact we will come back to later on.
@@ -319,7 +353,7 @@ If the monotonic effect is used in a linear model, $b$ can be interpreted as the
 expected average difference between two adjacent categories of $\bm{x}$, while
 $\zeta_i$ describes the expected difference between the categories $i$ and $i -
 1$ in the form of a proportion of the overall difference between lowest and
-highest categors. Thus, this parameterization has an intuitive interpretation
+highest categories. Thus, this parameterization has an intuitive interpretation
 while guaranteeing the monotonicity of the effect (see Proof A1 in Appendix A).
 As visualized in Figure \@ref(fig:moplot), we can understand monotonic effects
 as implying a piecewise linear curve of which all components have the same sign.
@@ -375,7 +409,6 @@ canonically written as
 \begin{equation}
 b \, \mo(x_n, \bm{\zeta}) \, f(X_n)
 \end{equation}
-
 where $f(.)$ is an arbitrary function on the set of predictor variables
 $\bm{X}$, and may of course include further monotonic effects. In more complex
 predictor terms, monotonic effects of $\bm{x}$ may also appear
@@ -390,7 +423,6 @@ $\bm{z}$ could be formulated as
 \eta_n = b_0 + b_1 \, z_n + b_2 \, \mo(x_n, \bm{\zeta}_{2}) 
 + b_3 \, z_n \, \mo(x_n, \bm{\zeta}_{3}), 
 \end{equation}
-
 where $\bm{\zeta}_{2}$ and $\bm{\zeta}_{3}$ are two simplex parameters related
 to $\bm{x}$. If $\bm{\zeta}_{2}$ and $\bm{\zeta}_{3}$ are different, $\bm{x}$
 may not necessarily be conditionally monotonic for all values of $\bm{z}$ (see
@@ -485,7 +517,6 @@ density is defined as
 \begin{equation}
 f(\bm{\zeta} | \bm{\alpha}) = \frac{1}{B(\bm{\alpha})} \prod_{i=1}^D \zeta_i^{\alpha_i - 1},
 \end{equation}
-
 where $B(\bm{\alpha})$ is a normalizing constant [@balakrishnan2014]. As the 
 _a-priori_ expectation of $\zeta_i$ is given by $w_i = \mathbb{E}(\zeta_i) =
 \alpha_i / \alpha_0$, with $\alpha_0 = \sum_{i = 1}^{D} \alpha_i$, higher values
@@ -567,7 +598,6 @@ the elements $\zeta_i$, which can be computed as [see @balakrishnan2014]:
 \text{SD}(\zeta_i) = \sqrt{\frac{w_i (1 - w_i)}
 {\alpha_0 + 1}}
 \end{equation}
-
 where $w_i = \alpha_i / \alpha_0$ is the expectation of the $i$th component.
 Although the standard deviation is an imperfect measure of variability
 for the Dirichlet distribution as the latter is not symmetric in
@@ -1421,14 +1451,60 @@ simulations and differences between them were comparably small (which we believe
 is a good sign for the validity of these methods in general). 
 Where monotonic effects differ from previously proposed approaches is their
 conceptualization as generalizations of continuous predictor terms, rather then
-as (penalized) categorial predictor terms. This allows for the intuitive
+as (penalized) categorial predictor means. This allows for the intuitive
 interpretation of the scale parameter as an ordinary regression coefficient,
 except that we do not assume the shape of the relationship as linear, but more
 generally as monotonic. It is this clear separation between the strength of the
 relationship and its shape that, in our opinion, makes monotonic effects very
-appealing for interpretation and communication. Of course, there is also
-nothing wrong with directly reporting and interpreting the estimated
-category means.
+appealing for interpretation and communication. 
+
+This separation is especially advantageous when dealing with interactions of
+ordinal predictors. If we used any type of categorical coding (e.g., dummy
+coding) for the interaction of two ordinal predictors, the number of regression
+coefficients would increase quadratically with the number of predictor
+categories, which complicates interpretation. When working with monotonic
+effects, we would still have to deal with only three related regression
+coefficients (two for the main effects and one for the interaction), which would
+essentially have the same interpretative complexity as a linear model with the
+ordinal predictors treated as continuous. Of course, intepreting the shape
+parameters of the main effects and interactions will again increase the
+complexity to a level similar to what is implied by categorical coding. However,
+often we may not be interested in the exact shape of the effect, in which case
+it would simply be sufficient to know that the shape has been taken into account
+by the model. Of course, there is nothing wrong with directly reporting and
+interpreting the estimated category means (or their contrasts), which, depending
+on one's preferences and the overall complexity of the model, may also be seen
+as more intuitive [e.g., see @barlow1972; @gertheiss2009; @klugkist2008;
+@danaher2012; @mulder2019 for related approaches].
+
+Regardless of what formulation one chooses, the assumption of monotonicity is
+critical and needs to be theoretically justified and/or statistically
+investigated. A general approach to the latter is to fit one model with and one
+without monotonicity constraint and then compare the two models using one's
+prefered criteria of model fit. From a Bayesian perspective, we could use, for
+example, Bayes factors or cross-validation procedures/information critera
+depending on whether we aim to penalize prior or posterior complexity,
+respectively [@hoijtink2008; @gelman_bayesian_2013]. In our case study, 
+we applied approximate leave-one-out cross-valdiation for this purpose but 
+other criteria would have been possible as well [e.g., see @mulder2019].
+
+As already pointed out earlier, one important distinction within the class of
+models dealing with ordinal predictors is the assumption about the generative
+process of these variables. In our monotonic effects approach, as well as in a
+lot of other prominent approaches [e.g., @klugkist2008; @gertheiss2009;
+@gu2013], we treat ordinal predictors as manifest variables. Specifically, we do
+not make the assumption that it was originating from the categorization of a
+latent continuous variable as typically done in latent variable models [e.g.,
+@winship1984; @joreskog1994; @finney2006; @lei2009]. Such a latent variable
+assumption may be sensible if the ordinal
+predictor represents the chosen categories of a Likert item, for instance, with
+the intention to measure a latent psychological construct, but would certainly
+not be sensible in some other cases, for instance, if the categories were known
+discrete points in time. Depending on the research question and goal of the
+analysis, a latent approach may be favorable but this is clearly not always the
+case. Instead, we think that both manifest and latent approaches to modeling
+ordinal predictors are important and our contribution lies explictly in the area
+of manifest approaches.
 
 Although our primary focus was the use of monotonic effects for modeling
 strictly ordinal predictors, we want to point out that they may be applied to
