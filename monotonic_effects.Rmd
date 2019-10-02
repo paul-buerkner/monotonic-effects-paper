@@ -120,8 +120,8 @@ still to compute orthogonal polynomials on their integer representations to
 model linear, qudratic, cubic, etc. terms of the predictors [@chambers1992]. We
 believe this approach to be suboptimal for various reasons, most notably because
 it assumes the ordinal categories to be equidistant, which is clearly an
-oversimplication, and because it yields parameter estimates that are hard to
-interpret. 
+oversimplication, and because it yields parameter estimates we would consider
+hard to interpret.
 
 The literature on ordinal predictors may be divided into three partially
 inter-conntected lines of research. The first is based on penalized regression/spline 
@@ -133,7 +133,7 @@ We begin by explaining the penalized regression approach.
 The main idea of the method proposed by
 @gertheiss2009 is to penalize large differences between adjacent categories.
 This is done by imposing a penality on the squared differences between the means
-of adjacent catgories, that is on $(\eta(x) - \eta(x - 1))^2$, where $x$ denotes
+of adjacent catgories, that is, on $(\eta(x) - \eta(x - 1))^2$, where $x$ denotes
 values of the ordinal predictor and $\eta(x)$ denotes the predicted mean at
 category $x$. The penalty reflects the expectation that, if a predictor is
 ordinal, changes may happen smoothly and larger differences should thus be
@@ -145,7 +145,7 @@ in @gertheiss2009; @gertheiss2011; @gertheiss2014], the direction of the changes
 remains unspecified and may vary across the range of the ordinal variable.
 
 In many practical settings, we do often expect the changes between adjacent
-categories to be *monotonic*, that is consistently negative or positive across
+categories to be *monotonic*, that is, consistently negative or positive across
 the full range of the ordinal variable [e.g., @barlow1972]. For instance, the
 subjective well-being may be monotonically related to measures of physical or
 psychological health, which we would typically assess via Likert scales and
@@ -217,7 +217,7 @@ regularize the model's predictions and make it robust against overfitting even
 in the absense of such specific knowledge.
 
 The method proposed in the present paper, as well as other approaches discussed
-above, model ordinal predictors as *manifest* variables, that is do not
+above, model ordinal predictors as *manifest* variables, that is, do not
 explicitly consider potential measurement error in these predictors. In
 contrast, in latent variable models, it is common to model ordinal variables as
 indicators of an underlying *latent* continuous variable, from which the
@@ -230,7 +230,7 @@ would have been if we had been able to directly observe the underlying true
 continuous construct. Importantly, this also implies a monotonic relationship
 between the manifest ordinal predictor and the response variable. A latent
 approach may be a reasonable modeling choice (a) if there is substantial
-measurement error and/or we are intereted in the (hypothetical) latent
+measurement error and/or we are interested in the (hypothetical) latent
 relationships between variables. In contrast, a manifest approach maybe a
 reasonable choice (a) if the variables are measured very precisely or simply
 known by design (e.g., discrete points in time in a longituditinal study), (b)
@@ -1405,7 +1405,7 @@ comp2 %>%
 
 In the present paper, we proposed a new approach to including 
 *monotonic effects* of ordinal predictors in regression models. 
-The chosen parameterization
+The proposed parameterization
 not only ensures monotonicity but also naturally regularizes the model and its
 predictions even without the usage of strong prior information. Thus, monotonic
 effects share important aspects with existing methods for modeling ordinal
@@ -1432,7 +1432,7 @@ designed to work well even for highly inter-correlated posteriors [@hoffman2014;
 effects in Stan -- either directly or indirectly through brms. Indeed, in the
 models estimated for the purpose of this paper, sampling efficiency and
 convergence were good and rarely worse that when using a purely linear approach.
-The only exceptions were monotonic intercation models with a very high number of
+The only exceptions were monotonic interaction models with a very high number of
 predictor categories (i.e., $51$ in our simulation). For that many predictor
 categories, it may be easier to fit (monotonic) splines or similar models which
 require fewer parameters.
@@ -1463,8 +1463,8 @@ ordinal predictors. If we used any type of categorical coding (e.g., dummy
 coding) for the interaction of two ordinal predictors, the number of regression
 coefficients would increase quadratically with the number of predictor
 categories, which complicates interpretation. When working with monotonic
-effects, we would still have to deal with only three related regression
-coefficients (two for the main effects and one for the interaction), which would
+effects, in contrast, we would only have three related regression coefficients 
+(two for the main effects and one for the interaction), which would
 essentially have the same interpretative complexity as a linear model with the
 ordinal predictors treated as continuous. Of course, intepreting the shape
 parameters of the main effects and interactions will again increase the
@@ -1493,18 +1493,18 @@ models dealing with ordinal predictors is the assumption about the generative
 process of these variables. In our monotonic effects approach, as well as in a
 lot of other prominent approaches [e.g., @klugkist2008; @gertheiss2009;
 @gu2013], we treat ordinal predictors as manifest variables. Specifically, we do
-not make the assumption that it was originating from the categorization of a
-latent continuous variable as typically done in latent variable models [e.g.,
-@winship1984; @joreskog1994; @finney2006; @lei2009]. Such a latent variable
-assumption may be sensible if the ordinal
+not make the assumption that the observations originate from the categorization of a
+latent continuous variable as is commonly the case in latent variable models 
+[e.g., @winship1984; @joreskog1994; @finney2006; @lei2009]. 
+Such a latent variable assumption may be sensible if the ordinal
 predictor represents the chosen categories of a Likert item, for instance, with
-the intention to measure a latent psychological construct, but would certainly
+the intention of measuring a latent psychological construct, but would certainly
 not be sensible in some other cases, for instance, if the categories were known
-discrete points in time. Depending on the research question and goal of the
-analysis, a latent approach may be favorable but this is clearly not always the
-case. Instead, we think that both manifest and latent approaches to modeling
-ordinal predictors are important and our contribution lies explictly in the area
-of manifest approaches.
+discrete points in time. Thus, both approaches seem valid in our opinion and are
+called for in different settings and research questions. We would like to note
+again that our proposed approach is targeted towards data settings where
+modeling manifest observations is desired, and that if researchers desire to
+examine a latent relationship, they are advised to use other methods.
 
 Although our primary focus was the use of monotonic effects for modeling
 strictly ordinal predictors, we want to point out that they may be applied to
@@ -1538,6 +1538,11 @@ non-negative basis functions of another spline [@ramsay1988]. In future
 research, it may thus be worthwhile to study continuous versions of monotonic
 effects and to relate them to existing methods [e.g., @ramsay1988; @pya2015]
 that ensure monotonicty in the continuous case.
+
+# Acknowledgements
+
+We would like to thank Marie Beisemann, Andrew Rutherford, and three anonymous
+reviewers for valuable comments on earlier versions of the paper.
 
 \newpage
 
