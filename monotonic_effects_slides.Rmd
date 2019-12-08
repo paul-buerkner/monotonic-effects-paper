@@ -427,15 +427,9 @@ Twitter: \@paulbuerkner
 \LARGE Summary
 
 
-##
-
-\centering
-\LARGE Thank you!
-
-
 ## References
 
-Bürkner, P., & Charpentier, E. (in review). Modeling Monotonic Effects of Ordinal Predictors in Regression Models. https://psyarxiv.com/9qkhj/ 
+Bürkner, P., & Charpentier, E. (in press). Modeling Monotonic Effects of Ordinal Predictors in Regression Models. *British Journal of Mathematical and Statistical Psychology*.
 
 <div id="refs"></div>
 
